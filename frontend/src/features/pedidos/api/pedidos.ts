@@ -29,13 +29,16 @@ export type FiltrosDePedidos = {
 
 export const TAMANHO_DA_PAGINA = 20;
 
+/** Prefixo das consultas da listagem, invalidado depois de criar um Pedido. */
+export const CHAVE_DOS_PEDIDOS = ["pedidos"] as const;
+
 export function periodoInvertido({ dataInicio, dataFim }: FiltrosDePedidos): boolean {
   return Boolean(dataInicio && dataFim && dataInicio > dataFim);
 }
 
 export function useListaDePedidos(filtros: FiltrosDePedidos, pagina: number) {
   return useQuery({
-    queryKey: ["pedidos", filtros, pagina],
+    queryKey: [...CHAVE_DOS_PEDIDOS, filtros, pagina],
     queryFn: ({ signal }) =>
       buscarJsonDaApi(
         "/pedidos",

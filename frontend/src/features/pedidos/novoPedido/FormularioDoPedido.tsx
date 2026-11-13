@@ -5,6 +5,7 @@ import { formatarMoeda } from "../../../compartilhado/formatacao";
 import type { Cliente } from "../../clientes/api/clientes";
 import { useProdutos } from "../../produtos/api/produtos";
 import type { NovoPedido, PedidoCriado, useCriarPedido } from "../api/criarPedido";
+import { CamposDoItem } from "./CamposDoItem";
 import {
   type CamposDoPedido,
   camposIniciais,
@@ -13,7 +14,6 @@ import {
   MAXIMO_DE_ITENS,
   previaDoValorTotal,
 } from "./formularioDoPedido";
-import { LinhaDoItem } from "./LinhaDoItem";
 import styles from "./NovoPedido.module.css";
 import { ViolacoesDaApi } from "./ViolacoesDaApi";
 
@@ -78,7 +78,7 @@ export function FormularioDoPedido({ clientes, criacao, aoCancelar, aoCriar }: P
           </p>
         )}
         {fields.map((campo, indice) => (
-          <LinhaDoItem
+          <CamposDoItem
             key={campo.id}
             indice={indice}
             item={itens[indice] ?? ITEM_VAZIO}

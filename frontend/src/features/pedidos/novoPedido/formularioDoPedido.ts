@@ -59,9 +59,10 @@ export function previaDoValorTotal(itens: ItemDoFormulario[], produtos: Produto[
   // Soma em centavos para a prévia não acumular erro de ponto flutuante.
   const centavos = itens.reduce((soma, item) => {
     const preco = precoPorId.get(Number(item.produtoId));
-    const qtd = Number(item.quantidade);
-    if (preco === undefined || !Number.isInteger(qtd) || qtd < 1) return soma;
-    return soma + Math.round(preco * 100) * qtd;
+    const quantidadePedida = Number(item.quantidade);
+    if (preco === undefined || !Number.isInteger(quantidadePedida) || quantidadePedida < 1)
+      return soma;
+    return soma + Math.round(preco * 100) * quantidadePedida;
   }, 0);
   return centavos / 100;
 }

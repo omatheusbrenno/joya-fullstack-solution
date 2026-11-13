@@ -15,10 +15,10 @@ type Props = {
 };
 
 /** Um Item de Pedido: Produto (com preço e Estoque), quantidade e remoção. */
-export function LinhaDoItem({ indice, item, produtos, register, erros, aoRemover }: Props) {
+export function CamposDoItem({ indice, item, produtos, register, erros, aoRemover }: Props) {
   const id = useId();
   const numero = indice + 1;
-  const produto = produtos.find((p) => p.id === Number(item.produtoId));
+  const produto = produtos.find((candidato) => candidato.id === Number(item.produtoId));
   const idDoErro = `${id}-erro`;
   const mensagens = [erros?.produtoId?.message, erros?.quantidade?.message].filter(Boolean);
 
@@ -33,9 +33,9 @@ export function LinhaDoItem({ indice, item, produtos, register, erros, aoRemover
         {...register(`itens.${indice}.produtoId`)}
       >
         <option value="">Escolha o Produto</option>
-        {produtos.map((p) => (
-          <option key={p.id} value={p.id} disabled={p.estoque === 0}>
-            {p.nome} · {formatarMoeda(p.preco)} · Estoque: {p.estoque}
+        {produtos.map((opcao) => (
+          <option key={opcao.id} value={opcao.id} disabled={opcao.estoque === 0}>
+            {opcao.nome} · {formatarMoeda(opcao.preco)} · Estoque: {opcao.estoque}
           </option>
         ))}
       </select>
