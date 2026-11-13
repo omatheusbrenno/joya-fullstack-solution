@@ -1,0 +1,3 @@
+# Frontend chama a API pela mesma origem, via proxy, e o CORS fica fechado
+
+O frontend só chama caminhos relativos `/api/...`. No Docker, o nginx que serve o SPA repassa `/api` para o backend; na Vercel, um rewrite faz o mesmo para o Render. Como não há requisição entre origens, o backend não libera nenhuma origem no CORS, e a mesma imagem do frontend roda em qualquer ambiente sem rebuild por URL (nada de `VITE_API_URL` embutido no build). Não "conserte" isso abrindo o CORS. Consequência: atrás do proxy, a API lê o IP real em `X-Forwarded-For`, confiando só nos proxies conhecidos, para o rate limiting não tratar todos os visitantes como um IP só.

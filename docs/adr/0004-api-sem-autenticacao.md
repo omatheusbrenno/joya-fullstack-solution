@@ -1,0 +1,3 @@
+# API sem autenticação de usuário, com defesa na borda
+
+O enunciado não pede autenticação, e implementá-la direito (identidade, armazenamento de segredos, testes) tomaria uma fatia grande do prazo. A API fica pública, decisão consciente e não esquecimento. Ela se defende na borda: validação de toda entrada, nenhuma origem cruzada liberada no CORS (o frontend chega pela mesma origem, ver ADR 0011), rate limiting, headers de segurança, SQL sempre parametrizado, preço nunca aceito do cliente e erros em ProblemDetails sem stack trace. Se um dia houver usuários, esta decisão deve ser revista antes de qualquer outra feature.

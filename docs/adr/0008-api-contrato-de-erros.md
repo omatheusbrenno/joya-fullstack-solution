@@ -1,0 +1,3 @@
+# API: erros em ProblemDetails, com 400 para forma e 422 para regra de negócio
+
+Todo erro sai em ProblemDetails (RFC 9457). `400` cobre request malformado ou que falha na validação de forma, com todos os erros de uma vez, agrupados por campo. `422` cobre violação de regra de negócio (Cliente inexistente, Produto inexistente, Estoque insuficiente), listando todos os Itens de Pedido afetados. `429` é rate limit e `500` é genérico, sem detalhes internos. Cliente inexistente é `422`, e não `404`, porque o recurso da URL existe: o que está inválido é o conteúdo do pedido. O frontend depende dessa distinção para mostrar a mensagem certa.
