@@ -1,0 +1,38 @@
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+**/appsettings.*.local.json
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Rascunhos de agente (PRDs/tickets locais nunca entram no repo)
+.scratch/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+coverage/
+*.trx
+
+# Node / frontend
+node_modules/
+dist/
+.angular/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+playwright-report/
+test-results/
+blob-report/
+
+# Editores e SO
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
