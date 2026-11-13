@@ -47,6 +47,31 @@ public sealed class ListarPedidosTests(BancoDeTestes banco) : IAsyncLifetime
             pagina.Itens);
     }
 
+    [Fact]
+    public async Task Pagina_com_20_por_padrao_desempata_pelo_id_e_conta_o_total_de_Pedidos()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        var mesmaData = Utc(2026, 2, 1, 12, 0, 0);
+        var ids = new List<int>();
+        for (var i = 0; i < 25; i++)
+        {
+            ids.Add(await _cenario.InserirPedidoAsync(ana, mesmaData, (teclado, 1, 150.00m)));
+        }
+
+        var primeira = await ListarAsync("/pedidos");
+        var segunda = await ListarAsync("/pedidos?pagina=2");
+        var paginaDe10 = await ListarAsync("/pedidos?pagina=3&tamanhoPagina=10");
+
+        var idsDecrescentes = ids.OrderDescending().ToArray();
+        Assert.Equal(idsDecrescentes[..20], primeira.Itens.Select(p => p.Id));
+        Assert.Equal(idsDecrescentes[20..], segunda.Itens.Select(p => p.Id));
+        Assert.Equal(idsDecrescentes[20..], paginaDe10.Itens.Select(p => p.Id));
+        Assert.All([primeira, segunda, paginaDe10], p => Assert.Equal(25, p.TotalItens));
+        Assert.Equal((2, 20), (segunda.Pagina, segunda.TamanhoPagina));
+        Assert.Equal((3, 10), (paginaDe10.Pagina, paginaDe10.TamanhoPagina));
+    }
+
     private async Task<PaginaDePedidos> ListarAsync(string caminho)
     {
         var resposta = await _cliente.GetAsync(new Uri(caminho, UriKind.Relative), TestContext.Current.CancellationToken);
