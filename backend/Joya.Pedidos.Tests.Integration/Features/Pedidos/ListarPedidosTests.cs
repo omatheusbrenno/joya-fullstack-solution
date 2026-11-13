@@ -95,6 +95,46 @@ public sealed class ListarPedidosTests(BancoDeTestes banco) : IAsyncLifetime
         Assert.Equal(1, filtrada.TotalItens);
     }
 
+    [Theory]
+    [InlineData("/pedidos?dataInicio=2026-03-02&dataFim=2026-03-01", "dataFim")]
+    [InlineData("/pedidos?pagina=0", "pagina")]
+    [InlineData("/pedidos?tamanhoPagina=0", "tamanhoPagina")]
+    [InlineData("/pedidos?tamanhoPagina=101", "tamanhoPagina")]
+    public async Task Parametros_invalidos_devolvem_400_em_ProblemDetails_apontando_o_campo(string caminho, string campo)
+    {
+        var resposta = await _cliente.GetAsync(new Uri(caminho, UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
+        var problema = await resposta.Content.ReadFromJsonAsync<ProblemaDeValidacao>(TestContext.Current.CancellationToken);
+        Assert.Equal(400, problema?.Status);
+        Assert.Contains(campo, problema?.Errors.Keys.ToArray() ?? [], StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Pagina_alem_do_fim_devolve_lista_vazia_com_o_total()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        await _cenario.InserirPedidoAsync(ana, Utc(2026, 2, 1, 12, 0, 0), (teclado, 1, 150.00m));
+
+        var pagina = await ListarAsync($"/pedidos?pagina={int.MaxValue}&tamanhoPagina=100");
+
+        Assert.Empty(pagina.Itens);
+        Assert.Equal(1, pagina.TotalItens);
+    }
+
+    [Theory]
+    [InlineData("/pedidos?dataInicio=01/03/2026")]
+    [InlineData("/pedidos?clienteId=abc")]
+    public async Task Parametro_em_formato_invalido_devolve_400_em_ProblemDetails(string caminho)
+    {
+        var resposta = await _cliente.GetAsync(new Uri(caminho, UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
+    }
+
     private async Task<int[]> IdsAsync(string caminho) => [.. (await ListarAsync(caminho)).Itens.Select(p => p.Id)];
 
     private async Task<PaginaDePedidos> ListarAsync(string caminho)
@@ -109,6 +149,8 @@ public sealed class ListarPedidosTests(BancoDeTestes banco) : IAsyncLifetime
         new(ano, mes, dia, hora, minuto, segundo, DateTimeKind.Utc);
 
     private sealed record PedidoListado(int Id, int ClienteId, string NomeCliente, DateTime DataPedido, int QuantidadeItens, decimal ValorTotal);
+
+    private sealed record ProblemaDeValidacao(int Status, Dictionary<string, string[]> Errors);
 
     private sealed record PaginaDePedidos(PedidoListado[] Itens, int Pagina, int TamanhoPagina, int TotalItens);
 }

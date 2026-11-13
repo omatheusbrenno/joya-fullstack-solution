@@ -48,9 +48,10 @@ public sealed class ListarPedidosHandler(FabricaDeConexao fabricaDeConexao)
     {
         var parametros = new DynamicParameters();
         parametros.Add("ClienteId", request.ClienteId, DbType.Int32);
-        parametros.Add("Inicio", request.DataInicio?.ToDateTime(TimeOnly.MinValue), DbType.DateTime2);
-        parametros.Add("FimExclusivo", FimExclusivo(request.DataFim), DbType.DateTime2);
-        parametros.Add("Pular", (request.Pagina - 1) * request.TamanhoPagina, DbType.Int32);
+        parametros.Add("Inicio", request.DataInicio?.Valor.ToDateTime(TimeOnly.MinValue), DbType.DateTime2);
+        parametros.Add("FimExclusivo", FimExclusivo(request.DataFim?.Valor), DbType.DateTime2);
+        // long: uma página muito alta não estoura o int (OFFSET aceita bigint).
+        parametros.Add("Pular", (long)(request.Pagina - 1) * request.TamanhoPagina, DbType.Int64);
         parametros.Add("TamanhoPagina", request.TamanhoPagina, DbType.Int32);
 
         await using var conexao = await fabricaDeConexao.AbrirAsync(cancellationToken);
