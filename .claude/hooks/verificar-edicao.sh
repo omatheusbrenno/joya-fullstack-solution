@@ -20,7 +20,10 @@ case "$arquivo" in
     ;;
   "$raiz"/frontend/*.ts | "$raiz"/frontend/*.tsx)
     cd "$raiz/frontend" || exit 0
-    [ -d node_modules ] || exit 0
+    if [ ! -d node_modules ]; then
+      echo "Não deu para verificar ${arquivo#"$raiz"/}: falta frontend/node_modules. Rode 'npm ci' em frontend/ e edite de novo." >&2
+      exit 2
+    fi
     if ! saida="$(npx --no-install biome check "$arquivo" 2>&1)"; then
       printf 'biome check falhou em %s (rode npm run format para corrigir o formato):\n%s\n' "${arquivo#"$raiz"/}" "$(printf '%s' "$saida" | head -40)" >&2
       exit 2
