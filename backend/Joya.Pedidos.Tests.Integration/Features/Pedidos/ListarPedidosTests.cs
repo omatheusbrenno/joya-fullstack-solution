@@ -108,7 +108,7 @@ public sealed class ListarPedidosTests(BancoDeTestes banco) : IAsyncLifetime
         Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
         var problema = await resposta.Content.ReadFromJsonAsync<ProblemaDeValidacao>(TestContext.Current.CancellationToken);
         Assert.Equal(400, problema?.Status);
-        Assert.Contains(campo, problema?.Errors.Keys.ToArray() ?? [], StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(campo, problema?.Errors.Keys.ToArray() ?? [], StringComparer.Ordinal);
     }
 
     [Fact]

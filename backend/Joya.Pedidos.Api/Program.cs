@@ -6,7 +6,7 @@ using Joya.Pedidos.Api.Infraestrutura;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(FabricaDeConexao.DaConfiguracao(builder.Configuration));
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetailsDaApi();
 builder.Services.AddValidation();
 builder.Services.AddSaude();
 builder.Services.AddListarClientes();
