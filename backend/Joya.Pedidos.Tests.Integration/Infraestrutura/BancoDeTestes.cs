@@ -5,12 +5,15 @@ namespace Joya.Pedidos.Tests.Integration.Infraestrutura;
 /// <summary>
 /// SQL Server real (Testcontainers) com os mesmos scripts de <c>database/</c> aplicados (ADR 0006).
 /// Um container por execução da suíte, compartilhado entre as classes de teste.
+/// A API conecta com o login de privilégio mínimo (joya_api), como no compose.
 /// </summary>
 public sealed class BancoDeTestes : IAsyncLifetime
 {
     private const string NomeDoBanco = "JoyaPedidos";
+    private const string LoginDaApi = "joya_api";
+    private const string SenhaDaApi = "Testes_Integracao_2026!";
 
-    private static readonly string[] ScriptsDeCriacao = ["00-criar-banco.sql", "01-criar-schema.sql"];
+    private static readonly string[] ScriptsDeCriacao = ["00-criar-banco.sql", "01-criar-schema.sql", "02-criar-login-api.sql"];
 
     private readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-CU28-ubuntu-22.04")
         .Build();
@@ -23,7 +26,9 @@ public sealed class BancoDeTestes : IAsyncLifetime
 
         foreach (var script in ScriptsDeCriacao)
         {
-            var conteudo = await File.ReadAllTextAsync(Path.Combine(LocalizarPastaDatabase(), script));
+            // O ExecScriptAsync não repassa variáveis do sqlcmd: a senha entra aqui, como o db-init faz com -v.
+            var conteudo = (await File.ReadAllTextAsync(Path.Combine(LocalizarPastaDatabase(), script)))
+                .Replace("$(SENHA_API)", SenhaDaApi, StringComparison.Ordinal);
             var resultado = await _container.ExecScriptAsync(conteudo);
             if (resultado.ExitCode != 0)
             {
@@ -34,6 +39,8 @@ public sealed class BancoDeTestes : IAsyncLifetime
         ConnectionString = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_container.GetConnectionString())
         {
             InitialCatalog = NomeDoBanco,
+            UserID = LoginDaApi,
+            Password = SenhaDaApi,
         }.ConnectionString;
     }
 
