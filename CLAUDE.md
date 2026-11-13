@@ -8,7 +8,7 @@ Monorepo de teste técnico: cadastro e consulta de Pedidos de Clientes, de ponta
 | --- | --- | --- |
 | `backend/` | API .NET (regras de negócio, persistência) | `backend/CLAUDE.md` |
 | `frontend/` | SPA TypeScript (telas de pedidos) | `frontend/CLAUDE.md` |
-| `database/` | scripts SQL de criação e carga (criada na implementação) | — |
+| `database/` | scripts SQL idempotentes de criação e carga, aplicados em ordem pelo `db-init` do compose | — |
 | `docs/adr/` | decisões de arquitetura (fonte histórica do "porquê") | — |
 | `docs/agents/` | configuração das skills (tracker, labels, domínio) | — |
 | `.claude/` | skills, rules, hooks e settings versionados | — |
@@ -43,7 +43,12 @@ Use `/ask-matt` quando não souber qual skill usar.
 
 ## Comandos
 
-Ainda não existem. Quando o docker-compose e os projetos forem criados, registre aqui o comando único de subida (`docker compose up`) e o de testes. Os comandos de cada app ficam no `CLAUDE.md` dela.
+- **Subir tudo** (banco + scripts + API + frontend): `docker compose up --build`. A aplicação abre em http://localhost:8080; a API fica atrás do nginx em `/api`. Sem `.env`, valem as senhas de desenvolvimento do `.env.example`.
+- **Esperar ficar pronto** (scripts, CI): `docker compose up --build -d --wait`.
+- **Zerar o banco**: `docker compose down -v` (apaga o volume; peça ao humano).
+- **CI**: `.github/workflows/ci.yml` roda backend, frontend e compose em cada push e PR.
+
+Os comandos de build, teste e lint de cada app ficam no `CLAUDE.md` dela. O hook `.claude/hooks/verificar-edicao.sh` já roda build e lint depois de cada edição; os testes você roda no fim de cada passo do TDD.
 
 ## Agent skills
 

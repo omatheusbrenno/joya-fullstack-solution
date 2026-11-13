@@ -29,4 +29,12 @@ Princípios que já valem:
 
 ## Comandos
 
-A preencher quando o projeto existir (dev server, build, lint, typecheck, testes, Playwright).
+Rode a partir de `frontend/`, depois de `npm ci`:
+
+- **Dev server**: `npm run dev`. O Vite repassa `/api` para `http://localhost:5080`; mude com `API_URL`.
+- **Lint + formato**: `npm run lint` (corrigir: `npm run format`).
+- **Tipos**: `npm run typecheck`
+- **Build**: `npm run build`
+- **Dependências**: `npm audit --omit=dev`
+
+A imagem Docker serve o build pelo nginx (`nginx.conf`), que repassa `/api/` para o serviço `api`.

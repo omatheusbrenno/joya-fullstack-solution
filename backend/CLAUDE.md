@@ -33,4 +33,14 @@ Quando a arquitetura estiver decidida, cada artefato recorrente (endpoint, query
 
 ## Comandos
 
-A preencher quando a solution existir (build, testes unitários, testes de integração, formatação).
+Rode a partir de `backend/`:
+
+- **Build**: `dotnet build` (warnings são erros).
+- **Testes unitários** (sem Docker, em ms): `dotnet test --project Joya.Pedidos.Tests.Unit`
+- **Testes de integração** (precisa de Docker; sobe SQL Server via Testcontainers e aplica `database/`): `dotnet test --project Joya.Pedidos.Tests.Integration`
+- **Um teste só**: `dotnet test --project <projeto> --filter-method "*NomeDoTeste"`
+- **Formatação**: `dotnet format` (a CI roda `dotnet format --verify-no-changes`).
+- **Pacotes vulneráveis**: `dotnet list package --vulnerable --include-transitive`
+- **Rodar a API local**: `ConnectionStrings__Pedidos="Server=localhost,1433;Database=JoyaPedidos;User Id=joya_api;Password=<SENHA_API>;Encrypt=True;TrustServerCertificate=True" dotnet run --project Joya.Pedidos.Api --urls http://localhost:5080`, com o banco do compose no ar.
+
+O runner é o Microsoft.Testing.Platform (`global.json`), com xUnit v3: use `--project`, não o caminho solto.
