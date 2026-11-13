@@ -214,4 +214,25 @@ O plano soma cerca de 12 h 45, contra as 6 a 8 h sugeridas pelo enunciado. Não 
 - A desativação de squash e rebase merge logo na fundação.
 - `COUNT(*) OVER()` versus contagem separada fica para decidir no ticket de listagem, olhando o plano de execução.
 
-> Comparação com o fatiamento do `/to-tickets`: a ser complementada com os números dos tickets quando o fatiamento for publicado.
+### 9. Comparação com o fatiamento do `/to-tickets`
+
+A #1 foi fatiada em 8 tickets verticais, que são sub-issues dela, com bloqueios nativos do GitHub.
+
+| Ticket | Fatia vertical | Bloqueado por | Fases do plan mode que atravessa |
+|---|---|---|---|
+| [#2](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/2) | Tracer bullet: `docker compose up` sobe banco + API `/health` + página, com CI e hook | — | 0, 1, 2, 7, 8 e 9 (só o mínimo de cada) |
+| [#3](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/3) | Listar Pedidos (carga legível, API, aba Pedidos) | #2 | 1, 3, 5 e 7 |
+| [#4](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/4) | Criar Pedido com Baixa de Estoque (API, modal, E2E, skill `criar-slice-backend`) | #3 | 3, 4, 7 e 9 |
+| [#5](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/5) | Top Clientes (volume determinístico, API, aba, E2E) | #3 | 1, 5, 7 e 9 |
+| [#6](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/6) | MCP somente leitura + debug da query (Parte 4) + skill `criar-script-sql` | #5 | 1 e 6 |
+| [#7](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/7) | Proteções de borda (OWASP) | #4 | 2 e 7 |
+| [#8](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/8) | Deploy online | #4, #5, #7 | 10 |
+| [#9](https://github.com/omatheusbrenno/joya-fullstack-solution/issues/9) | README final e conferência dos CA | #6, #8 | 10 |
+
+O que muda na prática:
+
+- **Cada fase do plan mode se espalha por vários tickets, e cada ticket cruza várias fases.** O frontend, que no plan mode era a Fase 7 inteira, aparece já no #2 e cresce a cada ticket. O Docker completo e a CI, que eram as Fases 8 e 9, nascem no #2.
+- **Depois do #3, os tickets #4 e #5 correm em paralelo.** No plano em fases tudo era sequencial.
+- **O MCP saiu da "fundação do banco" (Fase 1) e foi para junto do debug da Parte 4 (#6).** É ali que ele tem uso real: ler planos de execução sobre a carga com volume, que só existe a partir do #5.
+- **As proteções de borda foram adiadas para depois de Criar Pedido (#7).** A política de rate limit do POST precisa do endpoint, e o deploy (#8) fica bloqueado por elas: a API só vai a público protegida.
+- **O que o plan mode deixou implícito virou critério verificável.** Os destaques são a concorrência da Baixa de Estoque (CA08), a carga determinística e a separação forma/negócio no status HTTP.
