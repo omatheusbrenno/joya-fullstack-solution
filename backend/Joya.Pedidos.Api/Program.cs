@@ -1,5 +1,6 @@
 using Joya.Pedidos.Api.Features.Clientes.ListarClientes;
 using Joya.Pedidos.Api.Features.Pedidos.ListarPedidos;
+using Joya.Pedidos.Api.Features.Produtos.ListarProdutos;
 using Joya.Pedidos.Api.Features.Saude;
 using Joya.Pedidos.Api.Infraestrutura;
 
@@ -11,6 +12,7 @@ builder.Services.AddValidation();
 builder.Services.AddSaude();
 builder.Services.AddListarClientes();
 builder.Services.AddListarPedidos();
+builder.Services.AddListarProdutos();
 
 var app = builder.Build();
 
@@ -20,5 +22,6 @@ app.UseStatusCodePages();
 app.MapSaude();
 app.MapListarClientes();
 app.MapListarPedidos();
+app.MapListarProdutos();
 
 app.Run();
