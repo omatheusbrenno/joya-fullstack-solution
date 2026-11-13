@@ -51,13 +51,13 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 
 ## Kanban: GitHub Projects
 
-Issues are also items on a GitHub Projects (v2) board, used as the team's Kanban. Columns are the board's `Status` field: `Todo` → `In Progress` → `Done`.
+Issues are also items on the GitHub Projects (v2) board **#3**: https://github.com/users/omatheusbrenno/projects/3. Columns are the board's `Status` field: `Todo` → `In Progress` → `Done`.
 
-- **Find the board**: `gh project list --owner omatheusbrenno` (needs the `project` token scope: `gh auth refresh -s project`).
-- **Add a new issue to the board**: `gh project item-add <project-number> --owner omatheusbrenno --url <issue-url>`, right after `gh issue create`.
+- **Adding issues**: the board's "Auto-add to project" workflow (filter `is:issue`) adds every new issue of this repo automatically. Don't add items by hand.
+- **Manual fallback** (only if auto-add is off): `gh project item-add 3 --owner omatheusbrenno --url <issue-url>`. Needs the `project` token scope; without it, skip silently.
 - Status moves are done by the human on the board, or by the agent only when asked. Closing an issue lets the board's built-in workflow move it to `Done`.
 
-If the board doesn't exist yet or the scope is missing, **proceed without it**: the issue itself is the source of truth; the board is a view.
+The issue itself is the source of truth; the board is a view. If the board is unreachable, **proceed without it**.
 
 ## Where PRDs and plans live
 

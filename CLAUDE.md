@@ -48,7 +48,7 @@ Ainda não existem. Quando o docker-compose e os projetos forem criados, registr
 
 ### Issue tracker
 
-Issues e PRDs no GitHub Issues (`omatheusbrenno/joya-fullstack-solution`) via `gh` CLI, com um board Kanban no GitHub Projects. Ver `docs/agents/issue-tracker.md`.
+Issues e PRDs no GitHub Issues (`omatheusbrenno/joya-fullstack-solution`) via `gh` CLI, com o board Kanban [#3](https://github.com/users/omatheusbrenno/projects/3) no GitHub Projects. Ver `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
