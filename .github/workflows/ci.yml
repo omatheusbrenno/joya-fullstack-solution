@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (build e testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.1.0
+        with:
+          global-json-file: backend/global.json
+      - run: dotnet restore
+      - run: dotnet format --verify-no-changes --no-restore
+      - run: dotnet build --no-restore -c Release
+      - name: Pacotes vulneráveis
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vulneraveis.txt
+          ! grep -q "has the following vulnerable packages" vulneraveis.txt
+      - name: Testes unitários
+        # --ignore-exit-code 8 (nenhum teste encontrado) só enquanto o projeto não tem testes; remover no ticket #4.
+        run: dotnet test --project Joya.Pedidos.Tests.Unit --no-build -c Release --ignore-exit-code 8
+      - name: Testes de integração (SQL Server via Testcontainers)
+        run: dotnet test --project Joya.Pedidos.Tests.Integration --no-build -c Release
+
+  frontend:
+    name: Frontend (lint, tipos e build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22.23.1
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  compose:
+    name: Docker Compose sobe com um comando
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: docker compose up
+        run: docker compose up --build -d --wait --wait-timeout 300
+      - name: Stack responde pelo proxy de mesma origem
+        run: curl --fail --silent http://localhost:8080/api/health | grep -q Healthy
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose logs
+      - run: docker compose down -v
+        if: always()
