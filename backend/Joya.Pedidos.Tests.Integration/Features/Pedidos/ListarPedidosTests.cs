@@ -72,6 +72,31 @@ public sealed class ListarPedidosTests(BancoDeTestes banco) : IAsyncLifetime
         Assert.Equal((3, 10), (paginaDe10.Pagina, paginaDe10.TamanhoPagina));
     }
 
+    [Fact]
+    public async Task Filtra_por_Cliente_e_por_Periodo_com_as_duas_pontas_inclusivas_e_combinados()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var outraAna = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        var antesDoPeriodo = await _cenario.InserirPedidoAsync(ana, Utc(2026, 2, 28, 23, 59, 59), (teclado, 1, 150.00m));
+        var inicioDoPeriodo = await _cenario.InserirPedidoAsync(ana, Utc(2026, 3, 1, 0, 0, 0), (teclado, 1, 150.00m));
+        var fimDoPeriodo = await _cenario.InserirPedidoAsync(ana, Utc(2026, 3, 31, 23, 59, 59), (teclado, 1, 150.00m));
+        var depoisDoPeriodo = await _cenario.InserirPedidoAsync(ana, Utc(2026, 4, 1, 0, 0, 0), (teclado, 1, 150.00m));
+        var daOutraAna = await _cenario.InserirPedidoAsync(outraAna, Utc(2026, 3, 15, 10, 0, 0), (teclado, 1, 150.00m));
+
+        Assert.Equal([depoisDoPeriodo, fimDoPeriodo, inicioDoPeriodo, antesDoPeriodo], await IdsAsync($"/pedidos?clienteId={ana}"));
+        Assert.Equal([fimDoPeriodo, daOutraAna, inicioDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-01&dataFim=2026-03-31"));
+        Assert.Equal([depoisDoPeriodo, fimDoPeriodo, daOutraAna, inicioDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-01"));
+        Assert.Equal([fimDoPeriodo, daOutraAna, inicioDoPeriodo, antesDoPeriodo], await IdsAsync("/pedidos?dataFim=2026-03-31"));
+        Assert.Equal([fimDoPeriodo, inicioDoPeriodo], await IdsAsync($"/pedidos?clienteId={ana}&dataInicio=2026-03-01&dataFim=2026-03-31"));
+        Assert.Equal([fimDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-31&dataFim=2026-03-31&clienteId=" + ana));
+
+        var filtrada = await ListarAsync($"/pedidos?clienteId={outraAna}");
+        Assert.Equal(1, filtrada.TotalItens);
+    }
+
+    private async Task<int[]> IdsAsync(string caminho) => [.. (await ListarAsync(caminho)).Itens.Select(p => p.Id)];
+
     private async Task<PaginaDePedidos> ListarAsync(string caminho)
     {
         var resposta = await _cliente.GetAsync(new Uri(caminho, UriKind.Relative), TestContext.Current.CancellationToken);

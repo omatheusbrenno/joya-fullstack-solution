@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using Joya.Pedidos.Api.Infraestrutura;
 
@@ -5,12 +6,22 @@ namespace Joya.Pedidos.Api.Features.Pedidos.ListarPedidos;
 
 public sealed class ListarPedidosHandler(FabricaDeConexao fabricaDeConexao)
 {
+    // Filtros opcionais com parâmetros fixos: nada de SQL montado com entrada do usuário (OWASP A05).
+    // O Período vira o intervalo semiaberto [@Inicio, @FimExclusivo), sem função sobre DataPedido.
+    // OPTION (RECOMPILE) deixa o otimizador descartar os filtros nulos e usar os índices de Pedidos.
+    private const string Filtros = """
+        WHERE (@ClienteId IS NULL OR p.ClienteId = @ClienteId)
+          AND (@Inicio IS NULL OR p.DataPedido >= @Inicio)
+          AND (@FimExclusivo IS NULL OR p.DataPedido < @FimExclusivo)
+        """;
+
     // A página é recortada antes de calcular Itens e Valor Total: o agregado só roda para as linhas devolvidas,
     // coberto por IX_ItensPedido_PedidoId (ADR 0009).
-    private const string SqlDaPagina = """
+    private const string SqlDaPagina = $"""
         WITH Pagina AS (
             SELECT p.Id, p.ClienteId, p.DataPedido
             FROM dbo.Pedidos AS p
+            {Filtros}
             ORDER BY p.DataPedido DESC, p.Id DESC
             OFFSET @Pular ROWS FETCH NEXT @TamanhoPagina ROWS ONLY
         )
@@ -22,27 +33,40 @@ public sealed class ListarPedidosHandler(FabricaDeConexao fabricaDeConexao)
             FROM dbo.ItensPedido AS ip
             WHERE ip.PedidoId = pg.Id
         ) AS i
-        ORDER BY pg.DataPedido DESC, pg.Id DESC;
+        ORDER BY pg.DataPedido DESC, pg.Id DESC
+        OPTION (RECOMPILE);
         """;
 
-    private const string SqlDoTotal = "SELECT COUNT(*) FROM dbo.Pedidos AS p;";
+    private const string SqlDoTotal = $"""
+        SELECT COUNT(*)
+        FROM dbo.Pedidos AS p
+        {Filtros}
+        OPTION (RECOMPILE);
+        """;
 
-    public async Task<ListarPedidosResponse> ExecutarAsync(int pagina, int tamanhoPagina, CancellationToken cancellationToken)
+    public async Task<ListarPedidosResponse> ExecutarAsync(ListarPedidosRequest request, CancellationToken cancellationToken)
     {
         var parametros = new DynamicParameters();
-        parametros.Add("Pular", (pagina - 1) * tamanhoPagina);
-        parametros.Add("TamanhoPagina", tamanhoPagina);
+        parametros.Add("ClienteId", request.ClienteId, DbType.Int32);
+        parametros.Add("Inicio", request.DataInicio?.ToDateTime(TimeOnly.MinValue), DbType.DateTime2);
+        parametros.Add("FimExclusivo", FimExclusivo(request.DataFim), DbType.DateTime2);
+        parametros.Add("Pular", (request.Pagina - 1) * request.TamanhoPagina, DbType.Int32);
+        parametros.Add("TamanhoPagina", request.TamanhoPagina, DbType.Int32);
 
         await using var conexao = await fabricaDeConexao.AbrirAsync(cancellationToken);
         var linhas = await conexao.QueryAsync<LinhaDePedido>(new CommandDefinition(SqlDaPagina, parametros, cancellationToken: cancellationToken));
         var totalItens = await conexao.ExecuteScalarAsync<int>(new CommandDefinition(SqlDoTotal, parametros, cancellationToken: cancellationToken));
 
-        return new ListarPedidosResponse([.. linhas.Select(l => l.ParaResponse())], pagina, tamanhoPagina, totalItens);
+        return new ListarPedidosResponse([.. linhas.Select(l => l.ParaResponse())], request.Pagina, request.TamanhoPagina, totalItens);
     }
+
+    /// <summary>Meia-noite do dia seguinte à data final: a data final entra inteira, até 23:59:59.</summary>
+    private static DateTime? FimExclusivo(DateOnly? dataFim) =>
+        dataFim is null || dataFim == DateOnly.MaxValue ? null : dataFim.Value.AddDays(1).ToDateTime(TimeOnly.MinValue);
 
     private sealed record LinhaDePedido(int Id, int ClienteId, string NomeCliente, DateTime DataPedido, int QuantidadeItens, decimal ValorTotal)
     {
-        // DATETIME2 volta sem Kind; a Data do Pedido é sempre UTC (RN08), então sai com "Z" no JSON.
+        // DATETIME2 volta sem Kind. A Data do Pedido é sempre UTC (RN08), então sai com "Z" no JSON.
         public PedidoListadoResponse ParaResponse() =>
             new(Id, ClienteId, NomeCliente, DateTime.SpecifyKind(DataPedido, DateTimeKind.Utc), QuantidadeItens, ValorTotal);
     }
