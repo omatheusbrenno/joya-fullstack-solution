@@ -9,6 +9,8 @@ public sealed class ListarPedidosHandler(FabricaDeConexao fabricaDeConexao)
     // Filtros opcionais com parâmetros fixos: nada de SQL montado com entrada do usuário (OWASP A05).
     // O Período vira o intervalo semiaberto [@Inicio, @FimExclusivo), sem função sobre DataPedido.
     // OPTION (RECOMPILE) deixa o otimizador descartar os filtros nulos e usar os índices de Pedidos.
+    // Filtros é um const embutido nas consultas abaixo em tempo de compilação: nenhuma entrada do usuário
+    // entra no texto do SQL, que só recebe valores pelos parâmetros.
     private const string Filtros = """
         WHERE (@ClienteId IS NULL OR p.ClienteId = @ClienteId)
           AND (@Inicio IS NULL OR p.DataPedido >= @Inicio)

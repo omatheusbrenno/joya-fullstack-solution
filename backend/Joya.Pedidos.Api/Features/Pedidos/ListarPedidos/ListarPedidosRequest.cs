@@ -12,7 +12,7 @@ public sealed record ListarPedidosRequest(
     DataIso? DataInicio,
     DataIso? DataFim,
     [property: Range(1, int.MaxValue, ErrorMessage = "A página deve ser maior ou igual a 1.")] int Pagina = 1,
-    [property: Range(1, ListarPedidosRequest.TamanhoMaximoDaPagina, ErrorMessage = "O tamanho da página deve estar entre 1 e 100.")] int TamanhoPagina = 20)
+    [property: Range(1, ListarPedidosRequest.TamanhoMaximoDaPagina, ErrorMessage = "O tamanho da página deve estar entre {1} e {2}.")] int TamanhoPagina = 20)
     : IValidatableObject
 {
     public const int TamanhoMaximoDaPagina = 100;
