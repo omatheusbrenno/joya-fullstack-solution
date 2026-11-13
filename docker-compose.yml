@@ -1,5 +1,5 @@
 # Sobe a Gestão de Pedidos inteira: docker compose up
-# Senhas: padrões só de desenvolvimento, sobrescritos por um .env (ver .env.example).
+# Senhas: padrões só de desenvolvimento (ADR 0012), sobrescritos por um .env (ver .env.example).
 
 x-senhas: &senhas
   MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Dev_Joya_Sa_2026!}
