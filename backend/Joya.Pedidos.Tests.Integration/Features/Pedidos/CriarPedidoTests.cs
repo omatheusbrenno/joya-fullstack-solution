@@ -57,6 +57,120 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
         Assert.Equal((pedido.Id, pedido.DataPedido, 2, 539.70m), (listado.Id, listado.DataPedido, listado.QuantidadeItens, listado.ValorTotal));
     }
 
+    [Fact]
+    public async Task Cliente_inexistente_devolve_422_apontando_o_Cliente_sem_persistir_nem_baixar_Estoque()
+    {
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m, estoque: 10);
+
+        var resposta = await CriarAsync(new { clienteId = 999_999, itens = new[] { new { produtoId = teclado, quantidade = 1 } } });
+
+        var erros = await ProblemaAsync(resposta, HttpStatusCode.UnprocessableEntity);
+        Assert.Equal(["clienteId"], erros.Keys);
+        await AssertNadaMudouAsync(new Dictionary<int, int> { [teclado] = 10 });
+    }
+
+    [Theory]
+    [InlineData(0, "itens")]
+    [InlineData(51, "itens")]
+    public async Task Pedido_sem_Itens_ou_com_mais_de_50_devolve_400(int quantidadeDeItens, string campo)
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var produtos = new List<int>();
+        for (var i = 0; i < quantidadeDeItens; i++)
+        {
+            produtos.Add(await _cenario.InserirProdutoAsync($"Produto {i}", 1m));
+        }
+
+        var resposta = await CriarAsync(new { clienteId = ana, itens = produtos.Select(produtoId => new { produtoId, quantidade = 1 }) });
+
+        Assert.Equal([campo], (await ProblemaAsync(resposta, HttpStatusCode.BadRequest)).Keys);
+    }
+
+    [Fact]
+    public async Task Pedido_sem_o_campo_itens_devolve_400()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+
+        var resposta = await CriarAsync(new { clienteId = ana });
+
+        Assert.Equal(["itens"], (await ProblemaAsync(resposta, HttpStatusCode.BadRequest)).Keys);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(10_001)]
+    public async Task Quantidade_fora_de_1_a_10000_devolve_400_indicando_o_Item(int quantidade)
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m, estoque: 20_000);
+        var mouse = await _cenario.InserirProdutoAsync("Mouse", 79.90m);
+
+        var resposta = await CriarAsync(new { clienteId = ana, itens = new[] { new { produtoId = mouse, quantidade = 1 }, new { produtoId = teclado, quantidade } } });
+
+        Assert.Equal(["itens[1].quantidade"], (await ProblemaAsync(resposta, HttpStatusCode.BadRequest)).Keys);
+        await AssertNadaMudouAsync(new Dictionary<int, int> { [teclado] = 20_000, [mouse] = 100 });
+    }
+
+    [Fact]
+    public async Task Produto_repetido_devolve_400()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+
+        var resposta = await CriarAsync(new { clienteId = ana, itens = new[] { new { produtoId = teclado, quantidade = 1 }, new { produtoId = teclado, quantidade = 2 } } });
+
+        Assert.Equal(["itens[1].produtoId"], (await ProblemaAsync(resposta, HttpStatusCode.BadRequest)).Keys);
+    }
+
+    [Fact]
+    public async Task Produto_inexistente_devolve_422_indicando_o_Item()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m, estoque: 10);
+
+        var resposta = await CriarAsync(new { clienteId = ana, itens = new[] { new { produtoId = teclado, quantidade = 1 }, new { produtoId = 999_999, quantidade = 1 } } });
+
+        Assert.Equal(["itens[1].produtoId"], (await ProblemaAsync(resposta, HttpStatusCode.UnprocessableEntity)).Keys);
+        await AssertNadaMudouAsync(new Dictionary<int, int> { [teclado] = 10 });
+    }
+
+    [Fact]
+    public async Task Estoque_insuficiente_em_dois_Itens_devolve_422_listando_os_dois_sem_persistir_nada()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m, estoque: 1);
+        var mouse = await _cenario.InserirProdutoAsync("Mouse", 79.90m, estoque: 10);
+        var webcam = await _cenario.InserirProdutoAsync("Webcam", 279.90m, estoque: 0);
+
+        var resposta = await CriarAsync(new
+        {
+            clienteId = ana,
+            itens = new[] { new { produtoId = teclado, quantidade = 2 }, new { produtoId = mouse, quantidade = 3 }, new { produtoId = webcam, quantidade = 1 } },
+        });
+
+        var erros = await ProblemaAsync(resposta, HttpStatusCode.UnprocessableEntity);
+        Assert.Equal(["itens[0].quantidade", "itens[2].quantidade"], erros.Keys.Order(StringComparer.Ordinal));
+        await AssertNadaMudouAsync(new Dictionary<int, int> { [teclado] = 1, [mouse] = 10, [webcam] = 0 });
+    }
+
+    private async Task AssertNadaMudouAsync(Dictionary<int, int> estoquesEsperados)
+    {
+        Assert.Equal(estoquesEsperados, await EstoquesAsync());
+        Assert.Equal(0, (await ListarAsync()).TotalItens);
+    }
+
+    private static async Task<Dictionary<string, string[]>> ProblemaAsync(HttpResponseMessage resposta, HttpStatusCode statusEsperado)
+    {
+        Assert.Equal(statusEsperado, resposta.StatusCode);
+        Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
+        var problema = await resposta.Content.ReadFromJsonAsync<Problema>(TestContext.Current.CancellationToken)
+            ?? throw new InvalidOperationException("Resposta vazia.");
+        Assert.Equal((int)statusEsperado, problema.Status);
+        Assert.All(problema.Errors.Values, mensagens => Assert.NotEmpty(mensagens));
+        return problema.Errors;
+    }
+
     private async Task<HttpResponseMessage> CriarAsync(object corpo) =>
         await _cliente.PostAsJsonAsync(new Uri("/pedidos", UriKind.Relative), corpo, TestContext.Current.CancellationToken);
 
@@ -75,6 +189,8 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
     private sealed record PedidoCriado(int Id, int ClienteId, string NomeCliente, DateTime DataPedido, ItemCriado[] Itens, decimal ValorTotal);
 
     private sealed record ProdutoLido(int Id, int Estoque);
+
+    private sealed record Problema(int Status, Dictionary<string, string[]> Errors);
 
     private sealed record PedidoListado(int Id, DateTime DataPedido, int QuantidadeItens, decimal ValorTotal);
 
