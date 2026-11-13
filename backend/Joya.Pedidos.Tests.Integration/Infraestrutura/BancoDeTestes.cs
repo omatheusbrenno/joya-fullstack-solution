@@ -18,7 +18,11 @@ public sealed class BancoDeTestes : IAsyncLifetime
     private readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-CU28-ubuntu-22.04")
         .Build();
 
+    /// <summary>Conexão da API (joya_api, privilégio mínimo).</summary>
     public string ConnectionString { get; private set; } = string.Empty;
+
+    /// <summary>Conexão administrativa, só para preparar cenários (arrange), nunca para verificar resultado.</summary>
+    public string ConnectionStringAdmin { get; private set; } = string.Empty;
 
     public async ValueTask InitializeAsync()
     {
@@ -26,15 +30,13 @@ public sealed class BancoDeTestes : IAsyncLifetime
 
         foreach (var script in ScriptsDeCriacao)
         {
-            // O ExecScriptAsync não repassa variáveis do sqlcmd: a senha entra aqui, como o db-init faz com -v.
-            var conteudo = (await File.ReadAllTextAsync(Path.Combine(LocalizarPastaDatabase(), script)))
-                .Replace("$(SENHA_API)", SenhaDaApi, StringComparison.Ordinal);
-            var resultado = await _container.ExecScriptAsync(conteudo);
-            if (resultado.ExitCode != 0)
-            {
-                throw new InvalidOperationException($"Falha ao aplicar {script}: {resultado.Stderr}{resultado.Stdout}");
-            }
+            await AplicarScriptAsync(script);
         }
+
+        ConnectionStringAdmin = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_container.GetConnectionString())
+        {
+            InitialCatalog = NomeDoBanco,
+        }.ConnectionString;
 
         ConnectionString = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_container.GetConnectionString())
         {
@@ -42,6 +44,19 @@ public sealed class BancoDeTestes : IAsyncLifetime
             UserID = LoginDaApi,
             Password = SenhaDaApi,
         }.ConnectionString;
+    }
+
+    /// <summary>Aplica um script de <c>database/</c> como o db-init do compose faz (usuário sa).</summary>
+    public async Task AplicarScriptAsync(string script)
+    {
+        // O ExecScriptAsync não repassa variáveis do sqlcmd: a senha entra aqui, como o db-init faz com -v.
+        var conteudo = (await File.ReadAllTextAsync(Path.Combine(LocalizarPastaDatabase(), script)))
+            .Replace("$(SENHA_API)", SenhaDaApi, StringComparison.Ordinal);
+        var resultado = await _container.ExecScriptAsync(conteudo);
+        if (resultado.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Falha ao aplicar {script}: {resultado.Stderr}{resultado.Stdout}");
+        }
     }
 
     public async ValueTask DisposeAsync() => await _container.DisposeAsync();
