@@ -41,6 +41,6 @@ Rode a partir de `backend/`:
 - **Um teste só**: `dotnet test --project <projeto> --filter-method "*NomeDoTeste"`
 - **Formatação**: `dotnet format` (a CI roda `dotnet format --verify-no-changes`).
 - **Pacotes vulneráveis**: `dotnet list package --vulnerable --include-transitive`
-- **Rodar a API local**: `ConnectionStrings__Pedidos="Server=localhost,1433;Database=JoyaPedidos;User Id=joya_api;Password=<SENHA_API>;Encrypt=True;TrustServerCertificate=True" dotnet run --project Joya.Pedidos.Api --urls http://localhost:5080`, com o banco do compose no ar.
+- **Rodar a API local**: `ConnectionStrings__Pedidos="Server=localhost,1433;Database=JoyaPedidos;User Id=joya_api;Password=<SENHA_API>;Encrypt=True;TrustServerCertificate=True" dotnet run --project Joya.Pedidos.Api` (porta 5080, a mesma do proxy do Vite), com o banco do compose no ar.
 
 O runner é o Microsoft.Testing.Platform (`global.json`), com xUnit v3: use `--project`, não o caminho solto.
