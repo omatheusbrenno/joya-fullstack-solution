@@ -33,7 +33,7 @@ Quando a arquitetura estiver decidida, cada artefato recorrente (endpoint, query
 
 ## Comandos
 
-Rode a partir de `backend/`:
+Subida completa (da raiz): `docker compose up --build`. Rode o resto a partir de `backend/`:
 
 - **Build**: `dotnet build` (warnings são erros).
 - **Testes unitários** (sem Docker, em ms): `dotnet test --project Joya.Pedidos.Tests.Unit`

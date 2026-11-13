@@ -45,6 +45,8 @@ Use `/ask-matt` quando não souber qual skill usar.
 
 - **Subir tudo** (banco + scripts + API + frontend): `docker compose up --build`. A aplicação abre em http://localhost:8080; a API fica atrás do nginx em `/api`. Sem `.env`, valem as senhas de desenvolvimento do `.env.example`.
 - **Esperar ficar pronto** (scripts, CI): `docker compose up --build -d --wait`.
+- **Testes do backend** (de `backend/`): `dotnet test --project Joya.Pedidos.Tests.Unit` e `dotnet test --project Joya.Pedidos.Tests.Integration` (este precisa de Docker).
+- **Verificação do frontend** (de `frontend/`): `npm run lint && npm run typecheck && npm run build`.
 - **Zerar o banco**: `docker compose down -v` (apaga o volume; peça ao humano).
 - **CI**: `.github/workflows/ci.yml` roda backend, frontend e compose em cada push e PR.
 
