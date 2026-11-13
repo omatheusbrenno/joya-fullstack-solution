@@ -84,6 +84,55 @@ public sealed class RegrasDoPedidoTests
             violacoes);
     }
 
+    [Fact]
+    public void Cliente_inexistente_Produto_inexistente_e_Estoque_insuficiente_sao_recusados_por_negocio_todos_de_uma_vez()
+    {
+        var violacoes = Violacoes(RegrasDoPedido.Avaliar(
+            [new ItemSolicitado(3, 11), new ItemSolicitado(99, 1), new ItemSolicitado(4, 5), new ItemSolicitado(98, 2)],
+            cliente: null,
+            [Teclado, Mouse]));
+
+        Assert.Equal(
+            [
+                new Violacao(TipoDeViolacao.Negocio, "clienteId", "Cliente não encontrado."),
+                new Violacao(TipoDeViolacao.Negocio, "itens[0].quantidade", "Estoque insuficiente de Teclado: há 10 e o Item pede 11."),
+                new Violacao(TipoDeViolacao.Negocio, "itens[1].produtoId", "Produto 99 não encontrado."),
+                new Violacao(TipoDeViolacao.Negocio, "itens[3].produtoId", "Produto 98 não encontrado."),
+            ],
+            violacoes);
+    }
+
+    [Fact]
+    public void Estoque_igual_a_quantidade_pedida_e_suficiente()
+    {
+        var avaliacao = RegrasDoPedido.Avaliar([new ItemSolicitado(4, 5)], Ana, [Mouse]);
+
+        Assert.IsType<PedidoAceito>(avaliacao);
+    }
+
+    [Fact]
+    public void Violacao_de_forma_prevalece_e_as_regras_de_negocio_nao_sao_avaliadas()
+    {
+        var violacoes = Violacoes(RegrasDoPedido.Avaliar(
+            [new ItemSolicitado(99, 1), new ItemSolicitado(3, 0)],
+            cliente: null,
+            [Teclado]));
+
+        Assert.All(violacoes, violacao => Assert.Equal(TipoDeViolacao.Forma, violacao.Tipo));
+        Assert.Equal(["itens[1].quantidade"], violacoes.Select(violacao => violacao.Campo));
+    }
+
+    [Fact]
+    public void Valor_Total_soma_quantidade_vezes_Preco_Unitario_sem_perder_centavos()
+    {
+        var avaliacao = RegrasDoPedido.Avaliar(
+            [new ItemSolicitado(1, 3), new ItemSolicitado(2, 7), new ItemSolicitado(3, 10_000)],
+            Ana,
+            [new ProdutoEncontrado(1, "Caneta", 0.10m, 100), new ProdutoEncontrado(2, "Lápis", 0.20m, 100), new ProdutoEncontrado(3, "Clipe", 0.01m, 10_000)]);
+
+        Assert.Equal(101.70m, Assert.IsType<PedidoAceito>(avaliacao).Pedido.ValorTotal);
+    }
+
     private static IReadOnlyList<Violacao> Violacoes(AvaliacaoDoPedido avaliacao) =>
         Assert.IsType<PedidoRecusado>(avaliacao).Violacoes;
 }

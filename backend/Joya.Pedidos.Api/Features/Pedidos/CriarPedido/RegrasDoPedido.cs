@@ -23,17 +23,43 @@ public static class RegrasDoPedido
         }
 
         var produtosPorId = produtos.ToDictionary(produto => produto.Id);
-        var itensMontados = itens
-            .Select(item =>
+        var violacoesDeNegocio = new List<Violacao>();
+        if (cliente is null)
+        {
+            violacoesDeNegocio.Add(Negocio("clienteId", "Cliente não encontrado."));
+        }
+
+        var itensMontados = new List<ItemMontado>(itens.Count);
+        for (var indice = 0; indice < itens.Count; indice++)
+        {
+            var item = itens[indice];
+            if (!produtosPorId.TryGetValue(item.ProdutoId, out var produto))
             {
-                var produto = produtosPorId[item.ProdutoId];
-                return new ItemMontado(produto.Id, produto.Nome, item.Quantidade, produto.Preco);
-            })
-            .ToList();
-        return new PedidoAceito(new PedidoMontado(cliente!, itensMontados));
+                violacoesDeNegocio.Add(Negocio(CampoDoItem(indice, "produtoId"), $"Produto {item.ProdutoId} não encontrado."));
+                continue;
+            }
+
+            if (produto.Estoque < item.Quantidade)
+            {
+                violacoesDeNegocio.Add(Negocio(CampoDoItem(indice, "quantidade"), MensagemDeEstoqueInsuficiente(produto.Nome, produto.Estoque, item.Quantidade)));
+            }
+
+            // RN07: o Preço Unitário vem do preço atual do Produto, nunca do request.
+            itensMontados.Add(new ItemMontado(produto.Id, produto.Nome, item.Quantidade, produto.Preco));
+        }
+
+        return cliente is null || violacoesDeNegocio.Count > 0
+            ? new PedidoRecusado(violacoesDeNegocio)
+            : new PedidoAceito(new PedidoMontado(cliente, itensMontados));
     }
 
-    /// <summary>RN02 e RN03: dependem só do request.</summary>
+    public static string MensagemDeEstoqueInsuficiente(string nomeDoProduto, int estoque, int quantidade) =>
+        $"Estoque insuficiente de {nomeDoProduto}: há {estoque} e o Item pede {quantidade}.";
+
+    /// <summary>
+    /// RN02, RN03 e RN04: dependem só do request. Com qualquer uma delas, as regras de negócio não são avaliadas:
+    /// conferir Estoque contra uma quantidade inválida não diz nada, e o status é um só (400).
+    /// </summary>
     private static List<Violacao> VerificarForma(IReadOnlyList<ItemSolicitado> itens)
     {
         if (itens.Count is < MinimoDeItens or > MaximoDeItens)
@@ -68,4 +94,6 @@ public static class RegrasDoPedido
     private static string NomeDoItem(int indice) => $"Item {indice + 1}";
 
     private static Violacao Forma(string campo, string mensagem) => new(TipoDeViolacao.Forma, campo, mensagem);
+
+    private static Violacao Negocio(string campo, string mensagem) => new(TipoDeViolacao.Negocio, campo, mensagem);
 }
