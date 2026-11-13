@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styles from "./AbaPedidos.module.css";
-import { type FiltrosDePedidos, useListaDePedidos } from "./api/pedidos";
+import { type FiltrosDePedidos, periodoInvertido, useListaDePedidos } from "./api/pedidos";
 import { FiltrosDaListagem } from "./FiltrosDaListagem";
 import { Paginacao } from "./Paginacao";
 import { TabelaDePedidos } from "./TabelaDePedidos";
@@ -20,7 +20,8 @@ export function AbaPedidos() {
       <h2 id="titulo-pedidos">Pedidos</h2>
       <FiltrosDaListagem filtros={filtros} aoMudar={mudarFiltros} />
 
-      {lista.isError ? (
+      {/* Com o Período inválido não há consulta: o aviso fica nos filtros e o resultado anterior some. */}
+      {periodoInvertido(filtros) ? null : lista.isError ? (
         <p role="alert" className={styles.erro}>
           Não foi possível carregar os Pedidos. Tente novamente.
         </p>
