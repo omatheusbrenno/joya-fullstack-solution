@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Joya.Pedidos.Tests.Unit" />
+  </ItemGroup>
+
+</Project>
