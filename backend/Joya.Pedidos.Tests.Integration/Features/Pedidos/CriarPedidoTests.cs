@@ -154,6 +154,24 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
         await AssertNadaMudouAsync(new Dictionary<int, int> { [teclado] = 1, [mouse] = 10, [webcam] = 0 });
     }
 
+    [Fact]
+    public async Task Pedidos_simultaneos_pela_ultima_unidade_so_um_recebe_201_e_o_Estoque_termina_em_0()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var webcam = await _cenario.InserirProdutoAsync("Webcam", 279.90m, estoque: 1);
+        var corpo = new { clienteId = ana, itens = new[] { new { produtoId = webcam, quantidade = 1 } } };
+
+        // Mais de dois concorrentes aumentam a chance de as leituras se cruzarem antes da Baixa de Estoque.
+        var respostas = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => CriarAsync(corpo)));
+
+        Assert.Single(respostas, resposta => resposta.StatusCode == HttpStatusCode.Created);
+        Assert.All(
+            respostas.Where(resposta => resposta.StatusCode != HttpStatusCode.Created),
+            resposta => Assert.Equal(HttpStatusCode.UnprocessableEntity, resposta.StatusCode));
+        Assert.Equal(new Dictionary<int, int> { [webcam] = 0 }, await EstoquesAsync());
+        Assert.Equal(1, (await ListarAsync()).TotalItens);
+    }
+
     private async Task AssertNadaMudouAsync(Dictionary<int, int> estoquesEsperados)
     {
         Assert.Equal(estoquesEsperados, await EstoquesAsync());
