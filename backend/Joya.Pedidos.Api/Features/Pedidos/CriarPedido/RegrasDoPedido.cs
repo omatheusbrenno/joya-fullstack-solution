@@ -6,11 +6,22 @@ namespace Joya.Pedidos.Api.Features.Pedidos.CriarPedido;
 /// </summary>
 public static class RegrasDoPedido
 {
+    public const int MinimoDeItens = 1;
+    public const int MaximoDeItens = 50;
+    public const int QuantidadeMinima = 1;
+    public const int QuantidadeMaxima = 10_000;
+
     public static AvaliacaoDoPedido Avaliar(
         IReadOnlyList<ItemSolicitado> itens,
         ClienteEncontrado? cliente,
         IReadOnlyCollection<ProdutoEncontrado> produtos)
     {
+        var violacoesDeForma = VerificarForma(itens);
+        if (violacoesDeForma.Count > 0)
+        {
+            return new PedidoRecusado(violacoesDeForma);
+        }
+
         var produtosPorId = produtos.ToDictionary(produto => produto.Id);
         var itensMontados = itens
             .Select(item =>
@@ -21,4 +32,40 @@ public static class RegrasDoPedido
             .ToList();
         return new PedidoAceito(new PedidoMontado(cliente!, itensMontados));
     }
+
+    /// <summary>RN02 e RN03: dependem só do request.</summary>
+    private static List<Violacao> VerificarForma(IReadOnlyList<ItemSolicitado> itens)
+    {
+        if (itens.Count is < MinimoDeItens or > MaximoDeItens)
+        {
+            return [Forma("itens", $"O Pedido deve ter de {MinimoDeItens} a {MaximoDeItens} Itens.")];
+        }
+
+        var violacoes = new List<Violacao>();
+        var primeiroItemDoProduto = new Dictionary<int, int>();
+        for (var indice = 0; indice < itens.Count; indice++)
+        {
+            var item = itens[indice];
+            if (item.Quantidade is < QuantidadeMinima or > QuantidadeMaxima)
+            {
+                violacoes.Add(Forma(CampoDoItem(indice, "quantidade"), $"A quantidade deve estar entre {QuantidadeMinima} e {QuantidadeMaxima}."));
+            }
+
+            // RN04: o primeiro Item de cada Produto vale; cada repetição seguinte é uma violação.
+            if (!primeiroItemDoProduto.TryAdd(item.ProdutoId, indice))
+            {
+                violacoes.Add(Forma(CampoDoItem(indice, "produtoId"), $"O Produto {item.ProdutoId} já aparece no {NomeDoItem(primeiroItemDoProduto[item.ProdutoId])}."));
+            }
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>Caminho do campo no JSON, com índice a partir de 0 (ex.: <c>itens[1].quantidade</c>).</summary>
+    private static string CampoDoItem(int indice, string propriedade) => $"itens[{indice}].{propriedade}";
+
+    /// <summary>Nome do Item para quem lê a mensagem, contando a partir de 1.</summary>
+    private static string NomeDoItem(int indice) => $"Item {indice + 1}";
+
+    private static Violacao Forma(string campo, string mensagem) => new(TipoDeViolacao.Forma, campo, mensagem);
 }
