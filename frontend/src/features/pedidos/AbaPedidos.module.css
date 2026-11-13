@@ -65,3 +65,28 @@
   gap: 0.75rem;
   margin-top: 0.75rem;
 }
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cabecalho h2 {
+  margin: 0;
+}
+
+.cabecalho button {
+  font: inherit;
+  padding: 0.375rem 0.75rem;
+}
+
+.confirmacao {
+  margin: 0;
+  color: #1a7f37;
+}
+
+.confirmacao:empty {
+  display: none;
+}

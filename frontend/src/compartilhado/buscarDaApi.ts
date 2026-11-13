@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 /** Falha de chamada à API. A mensagem é genérica: nada do corpo de erro vai para a tela. */
 export class ErroDaApi extends Error {
@@ -10,6 +10,24 @@ export class ErroDaApi extends Error {
     this.status = status;
   }
 }
+
+/**
+ * 400 (forma) ou 422 (regra de negócio) com as violações por campo (ADR 0008), já validadas por schema.
+ * As chaves são caminhos do JSON enviado, como "clienteId" ou "itens[1].quantidade".
+ */
+export class ErroDeValidacaoDaApi extends ErroDaApi {
+  readonly violacoes: Record<string, string[]>;
+
+  constructor(status: number, violacoes: Record<string, string[]>) {
+    super(status);
+    this.name = "ErroDeValidacaoDaApi";
+    this.violacoes = violacoes;
+  }
+}
+
+const problemaDeValidacaoSchema = z.object({
+  errors: z.record(z.string(), z.array(z.string())),
+});
 
 type ParametrosDeConsulta = Record<string, string | number | undefined>;
 
@@ -41,6 +59,25 @@ export async function buscarJsonDaApi<T>(
     headers: { Accept: "application/json" },
     ...(signal ? { signal } : {}),
   });
+  if (!resposta.ok) throw new ErroDaApi(resposta.status);
+  return schema.parse(await resposta.json());
+}
+
+/** POST de JSON na API. Violações 400/422 viram {@link ErroDeValidacaoDaApi}; o resto, {@link ErroDaApi}. */
+export async function enviarJsonParaApi<T>(
+  caminho: string,
+  corpo: unknown,
+  schema: z.ZodType<T>,
+): Promise<T> {
+  const resposta = await fetch(montarUrl(caminho), {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(corpo),
+  });
+  if (resposta.status === 400 || resposta.status === 422) {
+    const problema = problemaDeValidacaoSchema.safeParse(await resposta.json().catch(() => null));
+    if (problema.success) throw new ErroDeValidacaoDaApi(resposta.status, problema.data.errors);
+  }
   if (!resposta.ok) throw new ErroDaApi(resposta.status);
   return schema.parse(await resposta.json());
 }

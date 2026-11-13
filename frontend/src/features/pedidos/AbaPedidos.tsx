@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { formatarMoeda } from "../../compartilhado/formatacao";
 import styles from "./AbaPedidos.module.css";
 import { type FiltrosDePedidos, periodoInvertido, useListaDePedidos } from "./api/pedidos";
 import { FiltrosDaListagem } from "./FiltrosDaListagem";
+import { ModalNovoPedido } from "./novoPedido/ModalNovoPedido";
 import { Paginacao } from "./Paginacao";
 import { TabelaDePedidos } from "./TabelaDePedidos";
 
@@ -9,6 +11,8 @@ export function AbaPedidos() {
   const [filtros, setFiltros] = useState<FiltrosDePedidos>({});
   const [pagina, setPagina] = useState(1);
   const lista = useListaDePedidos(filtros, pagina);
+  const [criandoPedido, setCriandoPedido] = useState(false);
+  const [confirmacao, setConfirmacao] = useState("");
 
   function mudarFiltros(novos: FiltrosDePedidos) {
     setFiltros(novos);
@@ -17,7 +21,31 @@ export function AbaPedidos() {
 
   return (
     <section aria-labelledby="titulo-pedidos" className={styles.aba}>
-      <h2 id="titulo-pedidos">Pedidos</h2>
+      <div className={styles.cabecalho}>
+        <h2 id="titulo-pedidos">Pedidos</h2>
+        <button
+          type="button"
+          onClick={() => {
+            setConfirmacao("");
+            setCriandoPedido(true);
+          }}
+        >
+          Novo Pedido
+        </button>
+      </div>
+      <p role="status" className={styles.confirmacao}>
+        {confirmacao}
+      </p>
+      <ModalNovoPedido
+        aberto={criandoPedido}
+        aoFechar={() => setCriandoPedido(false)}
+        aoCriar={(pedido) => {
+          setCriandoPedido(false);
+          setConfirmacao(
+            `Pedido #${pedido.id} criado para ${pedido.nomeCliente}, com Valor Total de ${formatarMoeda(pedido.valorTotal)}.`,
+          );
+        }}
+      />
       <FiltrosDaListagem filtros={filtros} aoMudar={mudarFiltros} />
 
       {/* Com o Período inválido não há consulta: o aviso fica nos filtros e o resultado anterior some. */}
