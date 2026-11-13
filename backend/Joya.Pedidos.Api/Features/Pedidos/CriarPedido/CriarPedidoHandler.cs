@@ -53,7 +53,7 @@ public sealed partial class CriarPedidoHandler(FabricaDeConexao fabricaDeConexao
 
         ClienteEncontrado? cliente;
         List<ProdutoEncontrado> produtos;
-        await using (var carga = await conexao.QueryMultipleAsync(Comando(SqlDeCarga, new { request.ClienteId, Itens = Json(itens) }, transacao, cancellationToken)))
+        await using (var carga = await conexao.QueryMultipleAsync(Comando(SqlDeCarga, new { ClienteId = request.ClienteId!.Value, Itens = Json(itens) }, transacao, cancellationToken)))
         {
             cliente = await carga.ReadSingleOrDefaultAsync<ClienteEncontrado>();
             produtos = [.. await carga.ReadAsync<ProdutoEncontrado>()];

@@ -172,6 +172,37 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
         Assert.Equal(1, (await ListarAsync()).TotalItens);
     }
 
+    [Fact]
+    public async Task Pedidos_simultaneos_com_os_mesmos_Produtos_em_ordens_opostas_sao_todos_criados()
+    {
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var produtos = new List<int>();
+        for (var i = 0; i < 6; i++)
+        {
+            produtos.Add(await _cenario.InserirProdutoAsync($"Produto {i}", 1m, estoque: 1_000));
+        }
+
+        // Ordens opostas cruzam os bloqueios: sem ordem fixa de bloqueio ou nova tentativa, sai deadlock (500).
+        var crescente = new { clienteId = ana, itens = produtos.Select(produtoId => new { produtoId, quantidade = 1 }).ToArray() };
+        var decrescente = new { clienteId = ana, itens = crescente.itens.Reverse().ToArray() };
+        var respostas = await Task.WhenAll(Enumerable.Range(0, 30).Select(i => CriarAsync(i % 2 == 0 ? crescente : decrescente)));
+
+        Assert.All(respostas, resposta => Assert.Equal(HttpStatusCode.Created, resposta.StatusCode));
+        Assert.All((await EstoquesAsync()).Values, estoque => Assert.Equal(970, estoque));
+    }
+
+    [Theory]
+    [InlineData("""{ "itens": [ { "produtoId": 1, "quantidade": 1 } ] }""", "clienteId")]
+    [InlineData("""{ "clienteId": 1, "itens": [ null ] }""", "itens[0]")]
+    public async Task Corpo_sem_Cliente_ou_com_Item_nulo_devolve_400(string corpo, string campo)
+    {
+        using var conteudo = new StringContent(corpo, System.Text.Encoding.UTF8, "application/json");
+
+        var resposta = await _cliente.PostAsync(new Uri("/pedidos", UriKind.Relative), conteudo, TestContext.Current.CancellationToken);
+
+        Assert.Contains(campo, (await ProblemaAsync(resposta, HttpStatusCode.BadRequest)).Keys);
+    }
+
     private async Task AssertNadaMudouAsync(Dictionary<int, int> estoquesEsperados)
     {
         Assert.Equal(estoquesEsperados, await EstoquesAsync());
