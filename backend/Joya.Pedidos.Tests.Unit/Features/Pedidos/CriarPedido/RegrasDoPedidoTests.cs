@@ -133,6 +133,21 @@ public sealed class RegrasDoPedidoTests
         Assert.Equal(101.70m, Assert.IsType<PedidoAceito>(avaliacao).Pedido.ValorTotal);
     }
 
+    [Fact]
+    public void Itens_que_nao_baixaram_o_Estoque_viram_violacoes_de_negocio_apontando_cada_Item()
+    {
+        var pedido = new PedidoMontado(Ana, [new ItemMontado(3, "Teclado", 2, 150.00m), new ItemMontado(4, "Mouse", 1, 79.90m), new ItemMontado(5, "Webcam", 1, 279.90m)]);
+
+        var violacoes = RegrasDoPedido.EstoqueConsumidoNaBaixa(pedido, produtosBaixados: new HashSet<int> { 4 });
+
+        Assert.Equal(
+            [
+                new Violacao(TipoDeViolacao.Negocio, "itens[0].quantidade", "Estoque insuficiente de Teclado: outro Pedido acabou de levar as unidades disponíveis."),
+                new Violacao(TipoDeViolacao.Negocio, "itens[2].quantidade", "Estoque insuficiente de Webcam: outro Pedido acabou de levar as unidades disponíveis."),
+            ],
+            violacoes);
+    }
+
     private static IReadOnlyList<Violacao> Violacoes(AvaliacaoDoPedido avaliacao) =>
         Assert.IsType<PedidoRecusado>(avaliacao).Violacoes;
 }

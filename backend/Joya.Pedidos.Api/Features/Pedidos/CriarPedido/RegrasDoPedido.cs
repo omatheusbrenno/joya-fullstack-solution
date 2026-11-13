@@ -53,7 +53,19 @@ public static class RegrasDoPedido
             : new PedidoAceito(new PedidoMontado(cliente, itensMontados));
     }
 
-    public static string MensagemDeEstoqueInsuficiente(string nomeDoProduto, int estoque, int quantidade) =>
+    /// <summary>
+    /// RN06 e RN09 no momento da Baixa de Estoque: os Itens cujo Produto não baixou perderam a corrida para
+    /// outro Pedido entre a leitura e o UPDATE condicional. O Pedido inteiro é recusado, apontando esses Itens.
+    /// </summary>
+    public static IReadOnlyList<Violacao> EstoqueConsumidoNaBaixa(PedidoMontado pedido, IReadOnlySet<int> produtosBaixados) =>
+        [.. pedido.Itens
+            .Select((item, indice) => (item, indice))
+            .Where(par => !produtosBaixados.Contains(par.item.ProdutoId))
+            .Select(par => Negocio(
+                CampoDoItem(par.indice, "quantidade"),
+                $"Estoque insuficiente de {par.item.NomeProduto}: outro Pedido acabou de levar as unidades disponíveis."))];
+
+    private static string MensagemDeEstoqueInsuficiente(string nomeDoProduto, int estoque, int quantidade) =>
         $"Estoque insuficiente de {nomeDoProduto}: há {estoque} e o Item pede {quantidade}.";
 
     /// <summary>
