@@ -36,6 +36,7 @@ Subida completa (da raiz): `docker compose up --build`, em http://localhost:8080
 - **Tipos**: `npm run typecheck`
 - **Build**: `npm run build`
 - **Dependências**: `npm audit --omit=dev`
-- **Testes**: ainda não há. Os E2E com Playwright chegam no ticket #4; testes Vitest de funções puras são opcionais.
+- **E2E (Playwright)**: com o compose no ar (`docker compose up --build -d --wait` na raiz), `npx playwright test`. Na primeira vez, `npx playwright install chromium`. Outra URL: `BASE_URL=...`. Os cenários ficam em `e2e/` e usam os ids fixos da carga de exemplo.
+- **Testes Vitest** de funções puras são opcionais; ainda não há.
 
 A imagem Docker serve o build pelo nginx (`nginx.conf`), que repassa `/api/` para o serviço `api`.

@@ -47,6 +47,7 @@ Use `/ask-matt` quando não souber qual skill usar.
 - **Esperar ficar pronto** (scripts, CI): `docker compose up --build -d --wait`.
 - **Testes do backend** (de `backend/`): `dotnet test --project Joya.Pedidos.Tests.Unit` e `dotnet test --project Joya.Pedidos.Tests.Integration` (este precisa de Docker).
 - **Verificação do frontend** (de `frontend/`): `npm run lint && npm run typecheck && npm run build`.
+- **E2E** (de `frontend/`, com o compose no ar): `npx playwright test`.
 - **Zerar o banco**: `docker compose down -v` (apaga o volume; peça ao humano).
 - **CI**: `.github/workflows/ci.yml` roda backend, frontend e compose em cada push e PR.
 
