@@ -18,6 +18,7 @@ Cada app tem o próprio `CLAUDE.md`, carregado quando você trabalha dentro dela
 ## Regras do repositório
 
 - **Linguagem ubíqua**: use os termos do `GLOSSARY.md` em código, rotas, testes, commits e issues. Termo novo vai para o glossário via `/domain-modeling`, não é inventado no meio do código.
+- **Nomes**: termos de domínio em PT-BR (`Pedido`, `ItemPedido`, rotas `/pedidos`, JSON `clienteId`); sufixos técnicos em inglês (`CriarPedidoHandler`, `ListarPedidosEndpoint`).
 - **Decisões viram ADR** em `docs/adr/`. Não contradiga um ADR em silêncio: aponte o conflito.
 - **PRDs e tickets ficam no GitHub Issues**, não em arquivos do repo. Exceção: `docs/spec.md` e `docs/plan.md` são entregáveis avaliados e ficam versionados.
 - **Segurança (OWASP Top 10)** é requisito, não extra. As regras por app estão em `.claude/rules/` e carregam sozinhas pelo caminho do arquivo editado.

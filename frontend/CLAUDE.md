@@ -9,9 +9,14 @@ Interface de Gestão de Pedidos que consome a API de `backend/`. Este arquivo va
 - Precisa subir pelo `docker compose up` da raiz.
 - Diferencial: testes end-to-end com Playwright (criar um pedido e vê-lo na listagem).
 
-## Arquitetura (a decidir, registrar em ADR)
+## Arquitetura (decidida, ver `docs/adr/`)
 
-Ainda **não está decidido**: React ou Angular, bundler, biblioteca de dados/estado, validação de schema na borda e geração do cliente da API a partir do OpenAPI do backend. Decida via `/grill-with-docs` e grave o ADR antes de codar.
+- **React + Vite + TypeScript strict** (ADR 0005).
+- **Uma página sem router**: abas "Pedidos" e "Top Clientes", mais o modal de criação de Pedido.
+- **Dados**: TanStack Query para estado de servidor; schemas Zod escritos à mão em `features/<feature>/api/`, validando toda resposta da API. Formulário com React Hook Form + Zod.
+- **API pela mesma origem**: só caminhos relativos `/api/...`, repassados pelo nginx (Docker) ou por um rewrite (Vercel). Nada de URL da API embutida no build (ADR 0011).
+- **Estilo**: CSS Modules, sem biblioteca de componentes.
+- **Qualidade**: Biome (lint + format) e `tsc --noEmit`; Vitest para funções puras; Playwright para os fluxos de criar Pedido e consultar Top Clientes.
 
 Princípios que já valem:
 
