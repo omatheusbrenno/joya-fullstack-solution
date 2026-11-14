@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "sqlserver": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub@1.5.0",
+        "--transport",
+        "stdio",
+        "--dsn",
+        "sqlserver://joya_mcp:${SENHA_MCP:-Leitura_Local_2026!}@localhost:1433/JoyaPedidos?sslmode=require"
+      ]
+    }
+  }
+}
