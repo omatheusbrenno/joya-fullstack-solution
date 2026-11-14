@@ -29,6 +29,7 @@ app.UseForwardedHeaders();
 app.UseStatusCodePages();
 app.UseRouting();
 app.UseRateLimiter();
+app.UseLimiteDeCorpo();
 
 app.MapSaude();
 app.MapListarClientes();
