@@ -27,7 +27,8 @@ Leia o script vivo mais parecido antes de escrever:
 4. **Testes de integração.** O `BancoDeTestes` aplica os mesmos arquivos num SQL Server do Testcontainers (ADR 0006):
    - um script de schema ou de login entra em `ScriptsDeCriacao`;
    - uma variável `$(X)` nova ganha o `.Replace` em `AplicarScriptAsync`;
-   - uma carga é aplicada pelo próprio teste com `banco.AplicarScriptAsync(...)`, **duas vezes**, e o assert confere que nada duplicou (ver `CargaDeExemploTests`).
+   - uma carga é aplicada pelo próprio teste com `banco.AplicarScriptAsync(...)`, **duas vezes**, e o assert confere que nada duplicou (ver `CargaDeExemploTests`);
+   - um login se prova pela conexão dele: o que ele lê e o erro 229 no que ele não pode, com o assert sobre a própria conexão (ver `LoginDoMcpTests`).
 5. **Verificação.** Rode `docker compose run --rm db-init` duas vezes seguidas contra o banco do compose: as duas terminam em "Banco pronto.". Depois rode os testes de integração.
 
 ## Idempotência: a guarda de cada objeto
@@ -77,4 +78,4 @@ A guarda olha só se o objeto existe. Mudar a definição de uma tabela que já 
 
 ## Commits
 
-Um commit por script verde, em Conventional Commits PT-BR: `feat(banco): ...` para schema e login, `feat(carga): ...` para carga.
+Um commit por script verde, em Conventional Commits PT-BR, com o escopo `database` ou `carga` (ex.: `feat(database): cria o login somente leitura do MCP`).

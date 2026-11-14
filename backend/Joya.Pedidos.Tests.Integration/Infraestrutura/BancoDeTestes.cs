@@ -44,20 +44,17 @@ public sealed class BancoDeTestes : IAsyncLifetime
             InitialCatalog = NomeDoBanco,
         }.ConnectionString;
 
-        ConnectionString = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_container.GetConnectionString())
-        {
-            InitialCatalog = NomeDoBanco,
-            UserID = LoginDaApi,
-            Password = SenhaDaApi,
-        }.ConnectionString;
-
-        ConnectionStringMcp = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_container.GetConnectionString())
-        {
-            InitialCatalog = NomeDoBanco,
-            UserID = LoginDoMcp,
-            Password = SenhaDoMcp,
-        }.ConnectionString;
+        ConnectionString = ConexaoComo(LoginDaApi, SenhaDaApi);
+        ConnectionStringMcp = ConexaoComo(LoginDoMcp, SenhaDoMcp);
     }
+
+    private string ConexaoComo(string login, string senha) =>
+        new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_container.GetConnectionString())
+        {
+            InitialCatalog = NomeDoBanco,
+            UserID = login,
+            Password = senha,
+        }.ConnectionString;
 
     /// <summary>Aplica um script de <c>database/</c> como o db-init do compose faz (usuário sa).</summary>
     public async Task AplicarScriptAsync(string script)
