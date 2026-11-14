@@ -1,0 +1,28 @@
+# Blueprint do Render para a API (ADR 0007): o mesmo Dockerfile do compose, no plano gratuito.
+# O frontend fica na Vercel e repassa /api para cá (frontend/vercel.json, ADR 0011).
+services:
+  - type: web
+    name: joya-pedidos-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      # A imagem escuta na 8080 (ASPNETCORE_HTTP_PORTS do Dockerfile).
+      - key: PORT
+        value: "8080"
+      # Segredo: preenchido no painel do Render, nunca versionado (OWASP A02).
+      - key: ConnectionStrings__Pedidos
+        sync: false
+      # O proxy do Render chega pela rede interna e acrescenta o IP de quem conectou ao X-Forwarded-For.
+      # Com ForwardLimit = 1 (ProxiesConfiaveis.cs), vale só essa entrada: o que veio antes, inclusive da Vercel,
+      # é ignorado. Atrás da Vercel, o IP visto é o de saída dela, e os visitantes que saem pelo mesmo IP dividem
+      # o balde do rate limit. É a escolha que falha fechado: confiar em mais um salto deixaria quem chama o
+      # Render direto escrever o próprio IP no header.
+      - key: ProxiesConfiaveis__0
+        value: 10.0.0.0/8
