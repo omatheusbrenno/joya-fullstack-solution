@@ -48,6 +48,7 @@ Use `/ask-matt` quando não souber qual skill usar.
 - **Testes do backend** (de `backend/`): `dotnet test --project Joya.Pedidos.Tests.Unit` e `dotnet test --project Joya.Pedidos.Tests.Integration` (este precisa de Docker).
 - **Verificação do frontend** (de `frontend/`): `npm run lint && npm run typecheck && npm run build`.
 - **Zerar o banco**: `docker compose down -v` (apaga o volume; peça ao humano).
+- **Refazer o deploy** (Azure SQL, Render e Vercel): `scripts/wizard-deploy.sh`, rodado pelo humano, porque os passos são nos painéis. Ele confere o ambiente online no fim.
 - **CI**: `.github/workflows/ci.yml` roda backend, frontend e compose em cada push e PR.
 
 Os comandos de build, teste e lint de cada app ficam no `CLAUDE.md` dela. O hook `.claude/hooks/verificar-edicao.sh` já roda build e lint depois de cada edição; os testes você roda no fim de cada passo do TDD.

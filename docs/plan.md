@@ -236,3 +236,30 @@ O que muda na prática:
 - **O MCP saiu da "fundação do banco" (Fase 1) e foi para junto do debug da Parte 4 (#6).** É ali que ele tem uso real: ler planos de execução sobre a carga com volume, que só existe a partir do #5.
 - **As proteções de borda foram adiadas para depois de Criar Pedido (#7).** A política de rate limit do POST precisa do endpoint, e o deploy (#8) fica bloqueado por elas: a API só vai a público protegida.
 - **O que o plan mode deixou implícito virou critério verificável.** Os destaques são a concorrência da Baixa de Estoque (CA08), a carga determinística e a separação forma/negócio no status HTTP.
+
+### 10. Fechamento: o que aconteceu de fato
+
+Números tirados do histórico do git e dos PRs, depois do merge do #8. O tempo vai do primeiro commit do ticket ao merge do PR. Não conta o tempo de leitura e de teste vermelho antes do primeiro commit.
+
+| Ticket | PR | Commits | `fix`/`refactor` | Do 1º commit ao merge | Testes no fim do ticket |
+|---|---|---|---|---|---|
+| #2 Tracer bullet | [#10](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/10) | 15 | 2 | 52 min | 2 de integração |
+| #3 Listar Pedidos | [#11](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/11) | 12 | 3 | 27 min | 14 de integração |
+| #4 Criar Pedido | [#12](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/12) | 15 | 2 | 38 min | 11 unitários, 30 de integração, 2 E2E |
+| #5 Top Clientes | [#13](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/13) | 7 | 2 | 19 min | 11, 43, 4 |
+| #6 MCP e Parte 4 | [#14](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/14) | 8 | 1 | 19 min | 11, 46, 4 |
+| #7 Proteções de borda | [#15](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/15) | 10 | 2 | 18 min | 11, 58, 5 |
+| #8 Deploy online | [#16](https://github.com/omatheusbrenno/joya-fullstack-solution/pull/16) | 7 | 2 | 89 min | 11, 59, 5 |
+| **Total** | 7 PRs | **74** | **14** | **≈ 4 h 22** | **11 + 59 + 5** |
+
+Antes dos tickets, a fundação (skills, `CLAUDE.md`, rules, hooks, glossário, ADRs 0001–0011, spec e este plano) somou 10 commits, das 09:56 às 13:00 do dia 13. Com um commit feito direto na `main` (o `SENHA_MCP` no `.env.example`, que só o humano podia editar), o histórico chegou a 85 commits até o deploy. O #9 (este README, o fechamento deste arquivo e a conferência dos CA) vem depois da tabela.
+
+O que os números mostram contra o plan mode:
+
+- **A estimativa de 12 h 45 não se confirmou.** Os sete tickets de código (#2 a #8) fecharam em cerca de 4 h 22 de commit a merge, dentro das 6 a 8 h do enunciado, mesmo somando a fundação. A fase que o plano subestimou foi a do deploy: 1 h 30 para README, deploy e vídeo juntos, contra 89 min só para o deploy. Duas das correções vieram de restrições reais do Azure que nenhum plano previu (a senha com pedaço do nome do login e o `CREATE LOGIN` recusado até num ramo que não executa).
+- **A ordem vertical aguentou.** Em todo merge o `main` subia e passava na CI, com banco, API, tela e E2E. O paralelismo entre #4 e #5 ficou só no papel: com uma sessão por vez, eles correram em sequência.
+- **Commits pequenos, como planejado no ajuste 6.** Foram 74 commits em 7 PRs, contra os cerca de 11 commits por fase do plan mode. Uma em cada cinco é `fix` ou `refactor`, e cada correção ficou visível no histórico em vez de sumir num commit grande. O README lista as correções.
+- **A execução criou cinco ADRs que o grilling não previu** (0012–0016): senhas de desenvolvimento no compose, envelope de paginação, a forma do Pedido na regra pura (que resolveu a discordância 4), o rate limit atrás da Vercel e o usuário contido no Azure.
+- **Os nomes do plano mudaram no caminho.** O login `mcp_leitura` virou `joya_mcp`. `database/debug/` virou `database/parte-4/`. Os três scripts viraram seis (`00` a `05`), com a carga dividida entre a legível (`03`) e o volume (`04`), e o login do MCP no fim (`05`), junto do ticket que o usa.
+- **Uma verificação do plano estava errada.** O plano esperava `Index Seek` em `Pedidos(DataPedido)` na query corrigida para 2026. A medição pelo MCP mostrou que, com 44% da tabela no ano, o scan é a escolha certa. O seek aparece num Período seletivo (9 leituras contra 145). Isso está no README, na Parte 4.
+- **A conferência dos CA01–CA27, mantida do plan mode, aconteceu no #9**, contra o compose rodando e as três suítes. O resultado e as dívidas conscientes estão no README.
