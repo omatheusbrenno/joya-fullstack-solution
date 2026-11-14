@@ -71,11 +71,12 @@ Faça na ordem do `/tdd`, um teste por ciclo. Cada passo só termina com o teste
 - **Unitários**: rodam sem I/O e em milissegundos. O valor esperado é um literal independente, nunca recalculado do jeito do código. Cubra várias violações juntas e valores com centavos.
 - **Integração**:
   - a classe leva `[Collection(ColecaoDoBanco.Nome)]`, recebe `BancoDeTestes` no construtor e implementa `IAsyncLifetime`;
-  - `InitializeAsync` limpa o banco com `CenarioDoBanco.LimparAsync()` e cria o `ApiDeTestes`;
+  - `InitializeAsync` limpa o banco com `CenarioDoBanco.LimparAsync()` e cria o `ApiDeTestes`. Exceção: um teste da borda (rate limit, corpo, headers, em `Features/ProtecoesDeBorda/`) não lê dado do banco e cria o próprio `ApiDeTestes`, porque cada instância começa com o limite zerado;
   - o arrange é feito pelo `CenarioDoBanco`, com a conexão admin. Faltando um insert, acrescente um método lá.
   - o assert é feito **pela API** (`GET /produtos` para o Estoque, `GET /pedidos` para o que foi persistido), nunca por consulta direta ao banco;
   - o corpo da resposta é lido em records `private sealed` locais à classe de teste;
-  - erro: confira o status, o `application/problem+json` e as chaves de `errors`.
+  - erro: confira o status, o `application/problem+json` e as chaves de `errors`. Sem `errors` por campo (413, 429, 500), use `Infraestrutura/ProblemaHttp`;
+  - requisição de um cliente específico atrás do proxy: `PostComoClienteAsync` (`X-Forwarded-For`). O `ApiDeTestes` se passa pelo proxy confiável, e cada IP tem o próprio rate limit.
 - **Concorrência**: dispare N requisições com `Task.WhenAll` (N > 2 aumenta a chance de a corrida acontecer de fato) e confira o estado final pela API.
 
 ## Commits
