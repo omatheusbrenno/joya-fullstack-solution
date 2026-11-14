@@ -59,6 +59,87 @@ public sealed class TopClientesTests(BancoDeTestes banco) : IAsyncLifetime
             top);
     }
 
+    [Fact]
+    public async Task Clientes_homonimos_aparecem_como_entradas_distintas_com_valores_proprios()
+    {
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        var outraAna = await _cenario.InserirClienteAsync("Ana Souza");
+        await _cenario.InserirPedidoAsync(ana, Utc(2026, 3, 10), (teclado, 1, 150.00m));
+        await _cenario.InserirPedidoAsync(outraAna, Utc(2026, 3, 11), (teclado, 2, 149.99m));
+        await _cenario.InserirPedidoAsync(outraAna, Utc(2026, 3, 12), (teclado, 1, 150.00m));
+
+        var top = await ConsultarAsync("/relatorios/top-clientes?dataInicio=2026-03-01&dataFim=2026-03-31");
+
+        Assert.Equal(
+            [
+                new TopCliente(outraAna, "Ana Souza", 2, 449.98m),
+                new TopCliente(ana, "Ana Souza", 1, 150.00m),
+            ],
+            top);
+    }
+
+    [Fact]
+    public async Task Considera_so_os_Pedidos_do_Periodo_com_as_duas_pontas_inclusivas_e_desempata_pelo_id()
+    {
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        var primeiro = await _cenario.InserirClienteAsync("Bruno Lima");
+        var segundo = await _cenario.InserirClienteAsync("Carla Mendes");
+        var semPedidosNoPeriodo = await _cenario.InserirClienteAsync("Diego Ferreira");
+        await _cenario.InserirClienteAsync("Elisa Rocha");
+        await _cenario.InserirPedidoAsync(semPedidosNoPeriodo, Utc(2026, 2, 28, 23, 59, 59), (teclado, 9, 150.00m));
+        await _cenario.InserirPedidoAsync(semPedidosNoPeriodo, Utc(2026, 4, 1, 0, 0, 0), (teclado, 9, 150.00m));
+        await _cenario.InserirPedidoAsync(segundo, Utc(2026, 3, 1, 0, 0, 0), (teclado, 1, 150.00m));
+        await _cenario.InserirPedidoAsync(primeiro, Utc(2026, 3, 31, 23, 59, 59), (teclado, 1, 150.00m));
+
+        var top = await ConsultarAsync("/relatorios/top-clientes?dataInicio=2026-03-01&dataFim=2026-03-31");
+
+        Assert.Equal(
+            [
+                new TopCliente(primeiro, "Bruno Lima", 1, 150.00m),
+                new TopCliente(segundo, "Carla Mendes", 1, 150.00m),
+            ],
+            top);
+    }
+
+    [Fact]
+    public async Task Periodo_sem_Pedidos_devolve_lista_vazia()
+    {
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        await _cenario.InserirPedidoAsync(ana, Utc(2026, 3, 10), (teclado, 1, 150.00m));
+
+        Assert.Empty(await ConsultarAsync("/relatorios/top-clientes?dataInicio=2025-01-01&dataFim=2025-12-31"));
+    }
+
+    [Theory]
+    [InlineData("/relatorios/top-clientes", new[] { "dataInicio", "dataFim" })]
+    [InlineData("/relatorios/top-clientes?dataFim=2026-03-31", new[] { "dataInicio" })]
+    [InlineData("/relatorios/top-clientes?dataInicio=2026-03-01", new[] { "dataFim" })]
+    [InlineData("/relatorios/top-clientes?dataInicio=2026-03-02&dataFim=2026-03-01", new[] { "dataFim" })]
+    public async Task Periodo_ausente_ou_invertido_devolve_400_em_ProblemDetails_apontando_os_campos(string caminho, string[] campos)
+    {
+        var resposta = await _cliente.GetAsync(new Uri(caminho, UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
+        var problema = await resposta.Content.ReadFromJsonAsync<ProblemaDeValidacao>(TestContext.Current.CancellationToken);
+        Assert.NotNull(problema);
+        Assert.Equal(400, problema.Status);
+        Assert.Equal(campos.Order(StringComparer.Ordinal), problema.Errors.Keys.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task Data_em_formato_invalido_devolve_400_em_ProblemDetails()
+    {
+        var resposta = await _cliente.GetAsync(
+            new Uri("/relatorios/top-clientes?dataInicio=01/03/2026&dataFim=2026-03-31", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+        Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
+    }
+
     private async Task<TopCliente[]> ConsultarAsync(string caminho)
     {
         var resposta = await _cliente.GetAsync(new Uri(caminho, UriKind.Relative), TestContext.Current.CancellationToken);
@@ -69,6 +150,8 @@ public sealed class TopClientesTests(BancoDeTestes banco) : IAsyncLifetime
 
     private static DateTime Utc(int ano, int mes, int dia, int hora = 12, int minuto = 0, int segundo = 0) =>
         new(ano, mes, dia, hora, minuto, segundo, DateTimeKind.Utc);
+
+    private sealed record ProblemaDeValidacao(int Status, Dictionary<string, string[]> Errors);
 
     private sealed record TopCliente(int ClienteId, string Nome, int QuantidadePedidos, decimal ValorTotal);
 }
