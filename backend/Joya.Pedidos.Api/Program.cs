@@ -22,8 +22,16 @@ builder.Services.AddConsultarTopClientes();
 
 var app = builder.Build();
 
+app.UseHeadersDeSeguranca();
+
 // Primeiro o IP real do cliente: tudo que vem depois (rate limit, logs) já o enxerga.
 app.UseForwardedHeaders();
+
+// HSTS só em requisição HTTPS, ou seja, quando o proxy confiável informa X-Forwarded-Proto: https.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 // Exceção não tratada vira 500 em ProblemDetails genérico, sem stack trace nem mensagem interna (CA18, ADR 0008).
 // O middleware registra a exceção no log. A página de erro detalhada fica só em Development.
