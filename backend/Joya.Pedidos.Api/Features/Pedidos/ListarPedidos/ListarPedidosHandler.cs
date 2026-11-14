@@ -50,8 +50,8 @@ public sealed class ListarPedidosHandler(FabricaDeConexao fabricaDeConexao)
     {
         var parametros = new DynamicParameters();
         parametros.Add("ClienteId", request.ClienteId, DbType.Int32);
-        parametros.Add("Inicio", request.DataInicio?.Valor.ToDateTime(TimeOnly.MinValue), DbType.DateTime2);
-        parametros.Add("FimExclusivo", FimExclusivo(request.DataFim?.Valor), DbType.DateTime2);
+        parametros.Add("Inicio", request.DataInicio is { } inicio ? Periodo.Inicio(inicio.Valor) : null, DbType.DateTime2);
+        parametros.Add("FimExclusivo", request.DataFim is { } fim ? Periodo.FimExclusivo(fim.Valor) : null, DbType.DateTime2);
         // long: uma página muito alta não estoura o int (OFFSET aceita bigint).
         parametros.Add("Pular", (long)(request.Pagina - 1) * request.TamanhoPagina, DbType.Int64);
         parametros.Add("TamanhoPagina", request.TamanhoPagina, DbType.Int32);
@@ -62,10 +62,6 @@ public sealed class ListarPedidosHandler(FabricaDeConexao fabricaDeConexao)
 
         return new ListarPedidosResponse([.. linhas.Select(l => l.ParaResponse())], request.Pagina, request.TamanhoPagina, totalItens);
     }
-
-    /// <summary>Meia-noite do dia seguinte à data final: a data final entra inteira, até 23:59:59.</summary>
-    private static DateTime? FimExclusivo(DateOnly? dataFim) =>
-        dataFim is null || dataFim == DateOnly.MaxValue ? null : dataFim.Value.AddDays(1).ToDateTime(TimeOnly.MinValue);
 
     private sealed record LinhaDePedido(int Id, int ClienteId, string NomeCliente, DateTime DataPedido, int QuantidadeItens, decimal ValorTotal)
     {

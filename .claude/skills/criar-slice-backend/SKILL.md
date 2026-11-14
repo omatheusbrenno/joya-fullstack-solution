@@ -54,7 +54,7 @@ Faça na ordem do `/tdd`, um teste por ciclo. Cada passo só termina com o teste
 - Os parâmetros passam por objeto anônimo ou por `DynamicParameters` com `DbType` explícito. Cada chamada vai num `CommandDefinition` com o `cancellationToken` (e a `transaction`, se houver).
 - Uma lista que vem do request viaja num único parâmetro JSON lido com `OPENJSON(@X) WITH (...)`. O número de parâmetros não cresce com a entrada.
 - Filtro opcional segue o padrão `(@X IS NULL OR col = @X)` com `OPTION (RECOMPILE)`.
-- Período vira o intervalo semiaberto `[início, fim + 1 dia)`, sem função sobre a coluna.
+- Período vira o intervalo semiaberto `[início, fim + 1 dia)`, sem função sobre a coluna. Use `Infraestrutura/Periodo` (`Inicio`, `FimExclusivo`) no handler e `Periodo.ValidarOrdem` no `Validate` do request.
 - A coluna `DATETIME2` volta do banco sem `Kind`. Aplique `DateTime.SpecifyKind(..., Utc)` antes de responder: a data sai com `Z` no JSON.
 - Num comando com escrita, abra a transação com `BeginTransactionAsync(ReadCommitted)`. Mudança concorrente de saldo usa `UPDATE` condicional (`WHERE saldo >= @q`) com `OUTPUT`: o que faltar no OUTPUT perdeu a corrida, então faça rollback e devolva 422.
 - A API roda com o login `joya_api` (`db_datareader` + `db_datawriter`). Ele não tem DDL.

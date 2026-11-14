@@ -17,11 +17,6 @@ public sealed record ListarPedidosRequest(
 {
     public const int TamanhoMaximoDaPagina = 100;
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (DataInicio > DataFim)
-        {
-            yield return new ValidationResult("A data final deve ser igual ou posterior à data inicial.", [nameof(DataFim)]);
-        }
-    }
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) =>
+        Periodo.ValidarOrdem(DataInicio, DataFim, nameof(DataFim));
 }

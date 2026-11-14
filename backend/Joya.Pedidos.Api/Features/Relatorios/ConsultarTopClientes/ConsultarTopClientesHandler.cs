@@ -2,9 +2,9 @@ using System.Data;
 using Dapper;
 using Joya.Pedidos.Api.Infraestrutura;
 
-namespace Joya.Pedidos.Api.Features.Relatorios.TopClientes;
+namespace Joya.Pedidos.Api.Features.Relatorios.ConsultarTopClientes;
 
-public sealed class TopClientesHandler(FabricaDeConexao fabricaDeConexao)
+public sealed class ConsultarTopClientesHandler(FabricaDeConexao fabricaDeConexao)
 {
     public const int QuantidadeDeClientes = 5;
 
@@ -35,23 +35,16 @@ public sealed class TopClientesHandler(FabricaDeConexao fabricaDeConexao)
         ORDER BY pc.ValorTotal DESC, pc.ClienteId ASC;
         """;
 
-    public async Task<IReadOnlyList<TopClienteResponse>> ExecutarAsync(TopClientesRequest request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<TopClienteResponse>> ExecutarAsync(ConsultarTopClientesRequest request, CancellationToken cancellationToken)
     {
         // O AddValidation já recusou (400) o request sem dataInicio ou dataFim.
-        var dataInicio = request.DataInicio!.Value.Valor;
-        var dataFim = request.DataFim!.Value.Valor;
-
         var parametros = new DynamicParameters();
-        parametros.Add("Inicio", dataInicio.ToDateTime(TimeOnly.MinValue), DbType.DateTime2);
-        parametros.Add("FimExclusivo", FimExclusivo(dataFim), DbType.DateTime2);
+        parametros.Add("Inicio", Periodo.Inicio(request.DataInicio!.Value.Valor), DbType.DateTime2);
+        parametros.Add("FimExclusivo", Periodo.FimExclusivo(request.DataFim!.Value.Valor), DbType.DateTime2);
         parametros.Add("Quantidade", QuantidadeDeClientes, DbType.Int32);
 
         await using var conexao = await fabricaDeConexao.AbrirAsync(cancellationToken);
         var linhas = await conexao.QueryAsync<TopClienteResponse>(new CommandDefinition(Sql, parametros, cancellationToken: cancellationToken));
         return [.. linhas];
     }
-
-    /// <summary>Meia-noite do dia seguinte à data final: a data final entra inteira, até 23:59:59.</summary>
-    private static DateTime FimExclusivo(DateOnly dataFim) =>
-        dataFim == DateOnly.MaxValue ? DateTime.MaxValue : dataFim.AddDays(1).ToDateTime(TimeOnly.MinValue);
 }

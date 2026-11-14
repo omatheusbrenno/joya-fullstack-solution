@@ -5,7 +5,7 @@ using Joya.Pedidos.Tests.Integration.Infraestrutura;
 namespace Joya.Pedidos.Tests.Integration.Features.Relatorios;
 
 [Collection(ColecaoDoBanco.Nome)]
-public sealed class TopClientesTests(BancoDeTestes banco) : IAsyncLifetime
+public sealed class ConsultarTopClientesTests(BancoDeTestes banco) : IAsyncLifetime
 {
     private readonly CenarioDoBanco _cenario = new(banco);
     private ApiDeTestes _api = null!;
@@ -110,6 +110,18 @@ public sealed class TopClientesTests(BancoDeTestes banco) : IAsyncLifetime
         await _cenario.InserirPedidoAsync(ana, Utc(2026, 3, 10), (teclado, 1, 150.00m));
 
         Assert.Empty(await ConsultarAsync("/relatorios/top-clientes?dataInicio=2025-01-01&dataFim=2025-12-31"));
+    }
+
+    [Fact]
+    public async Task Periodo_ate_a_ultima_data_possivel_inclui_os_Pedidos_ate_hoje()
+    {
+        var teclado = await _cenario.InserirProdutoAsync("Teclado", 150.00m);
+        var ana = await _cenario.InserirClienteAsync("Ana Souza");
+        await _cenario.InserirPedidoAsync(ana, Utc(2026, 3, 10), (teclado, 1, 150.00m));
+
+        var top = await ConsultarAsync("/relatorios/top-clientes?dataInicio=2026-01-01&dataFim=9999-12-31");
+
+        Assert.Equal([new TopCliente(ana, "Ana Souza", 1, 150.00m)], top);
     }
 
     [Theory]
