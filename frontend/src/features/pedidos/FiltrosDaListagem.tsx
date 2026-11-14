@@ -1,7 +1,8 @@
 import { useId } from "react";
+import { CamposDoPeriodo } from "../../compartilhado/CamposDoPeriodo";
 import { useClientes } from "../clientes/api/clientes";
 import styles from "./AbaPedidos.module.css";
-import { type FiltrosDePedidos, periodoInvertido } from "./api/pedidos";
+import type { FiltrosDePedidos } from "./api/pedidos";
 
 type Props = {
   filtros: FiltrosDePedidos;
@@ -11,7 +12,6 @@ type Props = {
 export function FiltrosDaListagem({ filtros, aoMudar }: Props) {
   const id = useId();
   const clientes = useClientes();
-  const invertido = periodoInvertido(filtros);
 
   return (
     <fieldset className={styles.filtros}>
@@ -35,22 +35,10 @@ export function FiltrosDaListagem({ filtros, aoMudar }: Props) {
         ))}
       </select>
 
-      <label htmlFor={`${id}-inicio`}>Data inicial</label>
-      <input
-        id={`${id}-inicio`}
-        type="date"
-        value={filtros.dataInicio ?? ""}
-        onChange={(e) => aoMudar({ ...filtros, dataInicio: e.target.value || undefined })}
-      />
-
-      <label htmlFor={`${id}-fim`}>Data final</label>
-      <input
-        id={`${id}-fim`}
-        type="date"
-        value={filtros.dataFim ?? ""}
-        aria-invalid={invertido}
-        aria-describedby={invertido ? `${id}-erro-periodo` : undefined}
-        onChange={(e) => aoMudar({ ...filtros, dataFim: e.target.value || undefined })}
+      <CamposDoPeriodo
+        periodo={filtros}
+        aoMudar={(periodo) => aoMudar({ ...filtros, ...periodo })}
+        classeDoErro={styles.erro}
       />
 
       <button type="button" onClick={() => aoMudar({})}>
@@ -58,11 +46,6 @@ export function FiltrosDaListagem({ filtros, aoMudar }: Props) {
       </button>
 
       {clientes.isError && <p role="alert">Não foi possível carregar os Clientes.</p>}
-      {invertido && (
-        <p id={`${id}-erro-periodo`} role="alert" className={styles.erro}>
-          A data final deve ser igual ou posterior à data inicial.
-        </p>
-      )}
     </fieldset>
   );
 }
