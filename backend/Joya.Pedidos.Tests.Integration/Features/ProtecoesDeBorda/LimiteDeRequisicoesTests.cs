@@ -55,6 +55,21 @@ public sealed class LimiteDeRequisicoesTests(BancoDeTestes banco) : IAsyncLifeti
         Assert.Equal(HttpStatusCode.OK, leitura.StatusCode);
     }
 
+    [Fact]
+    public async Task Health_fica_fora_do_limite_para_a_plataforma_nao_derrubar_a_API_por_429()
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            using var permitida = await GetAsync(Produtos);
+        }
+
+        using var esgotado = await GetAsync(Produtos);
+        using var saude = await GetAsync(new Uri("/health", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, esgotado.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, saude.StatusCode);
+    }
+
     private async Task<HttpResponseMessage> GetAsync(Uri uri) => await _cliente.GetAsync(uri, TestContext.Current.CancellationToken);
 
     // Corpo sem Cliente nem Itens: 400 rápido, sem tocar o banco. O limite conta a requisição mesmo assim.
