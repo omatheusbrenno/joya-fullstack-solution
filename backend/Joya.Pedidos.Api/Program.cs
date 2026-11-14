@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(FabricaDeConexao.DaConfiguracao(builder.Configuration));
 builder.Services.AddProblemDetailsDaApi();
 builder.Services.AddValidation();
+builder.Services.AddLimiteDeRequisicoes();
 builder.Services.AddSaude();
 builder.Services.AddListarClientes();
 builder.Services.AddListarPedidos();
@@ -22,6 +23,8 @@ var app = builder.Build();
 
 // Respostas de erro sem corpo (ex.: query string que não converte para o tipo) saem em ProblemDetails (ADR 0008).
 app.UseStatusCodePages();
+app.UseRouting();
+app.UseRateLimiter();
 
 app.MapSaude();
 app.MapListarClientes();
