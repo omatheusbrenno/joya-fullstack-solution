@@ -241,9 +241,11 @@ else
 fi
 note "Cria o usuário contido joya_api, o schema, a carga de exemplo e o volume de 50 mil Pedidos."
 if confirm "Aplicar os scripts em $SERVIDOR_SQL/JoyaPedidos agora?"; then
+  # As senhas vão pelo ambiente (-e NOME sem valor), não pela linha de comando que a lista de processos mostra.
+  export SENHA_ADMIN_SQL SENHA_API
   docker run --rm -v "$PWD/database:/database:ro" \
     -e SERVIDOR_SQL="$SERVIDOR_SQL" -e BANCO_SQL=JoyaPedidos -e USUARIO_SQL="$USUARIO_SQL" \
-    -e SENHA_ADMIN_SQL="$SENHA_ADMIN_SQL" -e SENHA_API="$SENHA_API" -e CONFIAR_CERTIFICADO=nao \
+    -e SENHA_ADMIN_SQL -e SENHA_API -e CONFIAR_CERTIFICADO=nao \
     --entrypoint /bin/bash "$IMAGEM_SQLCMD" /database/init/aplicar-scripts.sh
 else
   SKIPPED+=("aplicar os scripts de database/ no Azure (rode o wizard de novo)")
@@ -256,7 +258,7 @@ warn "O Render lê o render.yaml da branch escolhida: use a main depois do merge
 open_url "https://dashboard.render.com/blueprints"
 step "New Blueprint Instance → conecte o repositório joya-fullstack-solution → branch main."
 step "O Render pede o valor de ConnectionStrings__Pedidos. Cole esta linha (é segredo, não compartilhe):"
-printf '\n    Server=tcp:%s,1433;Database=JoyaPedidos;User ID=joya_api;Password=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30\n\n' \
+printf '\n    Server=tcp:%s,1433;Database=JoyaPedidos;User ID=joya_api;Password=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=15\n\n' \
   "$SERVIDOR_SQL" "$SENHA_API"
 step "Apply. O primeiro deploy pode falhar no health check: o firewall do Azure ainda não libera o Render."
 ask RENDER_URL "URL do serviço (ex.: $RENDER_ESPERADO):"
@@ -287,7 +289,8 @@ else
   SKIPPED+=("API do Render saudável em $RENDER_URL/health")
 fi
 if [[ "$RENDER_URL" != "$RENDER_ESPERADO" ]]; then
-  sed -i "s#$RENDER_ESPERADO#$RENDER_URL#" frontend/vercel.json
+  # -i.bak funciona no sed do GNU e no do macOS.
+  sed -i.bak "s#$RENDER_ESPERADO#$RENDER_URL#" frontend/vercel.json && rm -f frontend/vercel.json.bak
   warn "A URL difere da esperada: frontend/vercel.json foi atualizado. Faça commit e push antes da Vercel."
   SKIPPED+=("commit e push de frontend/vercel.json com $RENDER_URL")
 fi
@@ -318,7 +321,7 @@ for header in content-security-policy x-content-type-options referrer-policy; do
   else warn "faltou o header $header"; SKIPPED+=("header $header na Vercel"); fi
 done
 if [[ "$VERCEL_URL" != "$VERCEL_ESPERADO" ]]; then
-  sed -i "s#$VERCEL_ESPERADO#$VERCEL_URL#g" README.md
+  sed -i.bak "s#$VERCEL_ESPERADO#$VERCEL_URL#g" README.md && rm -f README.md.bak
   warn "README.md atualizado com $VERCEL_URL. Faça commit."
 fi
 pause
@@ -327,6 +330,7 @@ pause
 stage "Ponta a ponta no ambiente online"
 open_url "$VERCEL_URL"
 step "Crie um Pedido, veja-o na listagem e abra a aba Top Clientes."
+note "Os E2E passam pelo mesmo limite de 100 requisições por minuto do IP de saída da Vercel (ADR 0015)."
 if confirm "Rodar também os E2E do Playwright contra $VERCEL_URL? (cria Pedidos no banco online)"; then
   (cd frontend && BASE_URL="$VERCEL_URL" npx playwright test) || SKIPPED+=("E2E online falharam: veja frontend/playwright-report")
 fi
