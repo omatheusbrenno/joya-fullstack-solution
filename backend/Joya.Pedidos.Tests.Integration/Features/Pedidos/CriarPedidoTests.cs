@@ -221,16 +221,8 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
         return problema.Errors;
     }
 
-    private async Task<HttpResponseMessage> CriarAsync(object corpo, string? ipDoCliente = null)
-    {
-        using var requisicao = new HttpRequestMessage(HttpMethod.Post, new Uri("/pedidos", UriKind.Relative)) { Content = JsonContent.Create(corpo) };
-        if (ipDoCliente is not null)
-        {
-            requisicao.Headers.Add("X-Forwarded-For", ipDoCliente);
-        }
-
-        return await _cliente.SendAsync(requisicao, TestContext.Current.CancellationToken);
-    }
+    private async Task<HttpResponseMessage> CriarAsync(object corpo, string? ipDoCliente = null) =>
+        await _cliente.PostComoClienteAsync("/pedidos", corpo, ipDoCliente);
 
     private async Task<Dictionary<int, int>> EstoquesAsync()
     {

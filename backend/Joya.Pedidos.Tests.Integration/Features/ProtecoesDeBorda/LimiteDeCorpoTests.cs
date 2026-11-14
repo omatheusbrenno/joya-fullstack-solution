@@ -17,7 +17,7 @@ public sealed class LimiteDeCorpoTests(BancoDeTestes banco)
 
         using var resposta = await CriarPedidoAsync(cliente, CorpoComBytes((64 * UmKb) + 1));
 
-        await LimiteDeRequisicoesTests.AssertProblemaAsync(resposta, HttpStatusCode.RequestEntityTooLarge);
+        await ProblemaHttp.AssertAsync(resposta, HttpStatusCode.RequestEntityTooLarge);
     }
 
     [Fact]

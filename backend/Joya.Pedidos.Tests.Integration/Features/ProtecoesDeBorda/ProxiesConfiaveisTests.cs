@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using Joya.Pedidos.Tests.Integration.Infraestrutura;
 
 namespace Joya.Pedidos.Tests.Integration.Features.ProtecoesDeBorda;
@@ -16,11 +15,11 @@ public sealed class ProxiesConfiaveisTests(BancoDeTestes banco)
 
         for (var i = 0; i < 20; i++)
         {
-            using var permitida = await CriarPedidoAsync(cliente, "198.51.100.1");
+            using var permitida = await cliente.PostComoClienteAsync("/pedidos", new { }, "198.51.100.1");
         }
 
-        using var esgotado = await CriarPedidoAsync(cliente, "198.51.100.1");
-        using var outroCliente = await CriarPedidoAsync(cliente, "198.51.100.2");
+        using var esgotado = await cliente.PostComoClienteAsync("/pedidos", new { }, "198.51.100.1");
+        using var outroCliente = await cliente.PostComoClienteAsync("/pedidos", new { }, "198.51.100.2");
 
         Assert.Equal(HttpStatusCode.TooManyRequests, esgotado.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, outroCliente.StatusCode);
@@ -35,21 +34,11 @@ public sealed class ProxiesConfiaveisTests(BancoDeTestes banco)
         // Um IP forjado diferente a cada requisição não dribla o limite.
         for (var i = 0; i < 20; i++)
         {
-            using var permitida = await CriarPedidoAsync(cliente, $"198.51.100.{i + 1}");
+            using var permitida = await cliente.PostComoClienteAsync("/pedidos", new { }, $"198.51.100.{i + 1}");
         }
 
-        using var resposta = await CriarPedidoAsync(cliente, "198.51.100.200");
+        using var resposta = await cliente.PostComoClienteAsync("/pedidos", new { }, "198.51.100.200");
 
         Assert.Equal(HttpStatusCode.TooManyRequests, resposta.StatusCode);
-    }
-
-    private static async Task<HttpResponseMessage> CriarPedidoAsync(HttpClient cliente, string ipDoCliente)
-    {
-        using var requisicao = new HttpRequestMessage(HttpMethod.Post, new Uri("/pedidos", UriKind.Relative))
-        {
-            Content = JsonContent.Create(new { }),
-        };
-        requisicao.Headers.Add("X-Forwarded-For", ipDoCliente);
-        return await cliente.SendAsync(requisicao, TestContext.Current.CancellationToken);
     }
 }

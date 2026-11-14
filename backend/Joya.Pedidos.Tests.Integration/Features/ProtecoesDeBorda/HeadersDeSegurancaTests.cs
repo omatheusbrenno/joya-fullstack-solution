@@ -23,7 +23,7 @@ public sealed class HeadersDeSegurancaTests(BancoDeTestes banco)
     [Fact]
     public async Task Resposta_de_erro_inesperado_tambem_traz_os_headers_de_seguranca()
     {
-        await using var api = new ApiDeTestes("Server=127.0.0.1,1;Database=JoyaPedidos;User Id=sa;Password=x;Connect Timeout=1;TrustServerCertificate=True");
+        await using var api = new ApiDeTestes(ApiDeTestes.BancoInalcancavel);
         using var cliente = api.CreateClient();
 
         using var resposta = await cliente.GetAsync(Produtos, TestContext.Current.CancellationToken);

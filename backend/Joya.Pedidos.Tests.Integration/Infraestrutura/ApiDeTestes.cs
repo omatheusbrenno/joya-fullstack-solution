@@ -15,6 +15,9 @@ public sealed class ApiDeTestes(string connectionString, IPAddress? ipRemoto = n
 {
     public static readonly IPAddress Proxy = IPAddress.Parse("10.0.0.1");
 
+    /// <summary>Banco que não responde: o handler lança SqlException, um erro que nenhum slice trata.</summary>
+    public const string BancoInalcancavel = "Server=127.0.0.1,1;Database=JoyaPedidos;User Id=sa;Password=SenhaSecreta;Connect Timeout=1;TrustServerCertificate=True";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");

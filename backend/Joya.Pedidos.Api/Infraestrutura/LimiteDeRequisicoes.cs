@@ -23,6 +23,7 @@ public static class LimiteDeRequisicoes
             opcoes.AddPolicy(CriacaoDePedido, contexto => PorIp(contexto, PorMinutoNaCriacaoDePedido));
         });
 
+    // Sem IP (não acontece no Kestrel, que sempre tem a conexão) todos caem num balde só: falha fechado.
     private static RateLimitPartition<string> PorIp(HttpContext contexto, int limitePorMinuto) =>
         RateLimitPartition.GetFixedWindowLimiter(
             contexto.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",

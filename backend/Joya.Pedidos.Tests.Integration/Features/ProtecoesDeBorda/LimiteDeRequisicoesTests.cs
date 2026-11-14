@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using Joya.Pedidos.Tests.Integration.Infraestrutura;
 
 namespace Joya.Pedidos.Tests.Integration.Features.ProtecoesDeBorda;
@@ -36,7 +35,7 @@ public sealed class LimiteDeRequisicoesTests(BancoDeTestes banco) : IAsyncLifeti
 
         using var resposta = await GetAsync(Produtos);
 
-        await AssertProblemaAsync(resposta, HttpStatusCode.TooManyRequests);
+        await ProblemaHttp.AssertAsync(resposta, HttpStatusCode.TooManyRequests);
     }
 
     [Fact]
@@ -50,7 +49,7 @@ public sealed class LimiteDeRequisicoesTests(BancoDeTestes banco) : IAsyncLifeti
 
         using var resposta = await CriarPedidoAsync();
 
-        await AssertProblemaAsync(resposta, HttpStatusCode.TooManyRequests);
+        await ProblemaHttp.AssertAsync(resposta, HttpStatusCode.TooManyRequests);
         using var leitura = await GetAsync(Produtos);
         Assert.Equal(HttpStatusCode.OK, leitura.StatusCode);
     }
@@ -73,16 +72,5 @@ public sealed class LimiteDeRequisicoesTests(BancoDeTestes banco) : IAsyncLifeti
     private async Task<HttpResponseMessage> GetAsync(Uri uri) => await _cliente.GetAsync(uri, TestContext.Current.CancellationToken);
 
     // Corpo sem Cliente nem Itens: 400 rápido, sem tocar o banco. O limite conta a requisição mesmo assim.
-    private async Task<HttpResponseMessage> CriarPedidoAsync() =>
-        await _cliente.PostAsJsonAsync(new Uri("/pedidos", UriKind.Relative), new { }, TestContext.Current.CancellationToken);
-
-    internal static async Task AssertProblemaAsync(HttpResponseMessage resposta, HttpStatusCode statusEsperado)
-    {
-        Assert.Equal(statusEsperado, resposta.StatusCode);
-        Assert.Equal("application/problem+json", resposta.Content.Headers.ContentType?.MediaType);
-        var problema = await resposta.Content.ReadFromJsonAsync<Problema>(TestContext.Current.CancellationToken);
-        Assert.Equal((int)statusEsperado, problema?.Status);
-    }
-
-    private sealed record Problema(int Status);
+    private async Task<HttpResponseMessage> CriarPedidoAsync() => await _cliente.PostComoClienteAsync("/pedidos", new { }, ipDoCliente: null);
 }

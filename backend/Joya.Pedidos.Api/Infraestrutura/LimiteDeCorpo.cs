@@ -9,12 +9,12 @@ namespace Joya.Pedidos.Api.Infraestrutura;
 /// </summary>
 public static class LimiteDeCorpo
 {
-    public const long Bytes = 64 * 1024;
+    public const long MaximoEmBytes = 64 * 1024;
 
     public static IApplicationBuilder UseLimiteDeCorpo(this IApplicationBuilder app) =>
         app.Use((contexto, proximo) =>
         {
-            if (contexto.Request.ContentLength > Bytes)
+            if (contexto.Request.ContentLength > MaximoEmBytes)
             {
                 contexto.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
                 return Task.CompletedTask;
@@ -22,7 +22,7 @@ public static class LimiteDeCorpo
 
             if (contexto.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limiteDoServidor)
             {
-                limiteDoServidor.MaxRequestBodySize = Bytes;
+                limiteDoServidor.MaxRequestBodySize = MaximoEmBytes;
             }
 
             return proximo(contexto);
