@@ -185,7 +185,8 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
         // Ordens opostas cruzam os bloqueios: sem ordem fixa de bloqueio ou nova tentativa, sai deadlock (500).
         var crescente = new { clienteId = ana, itens = produtos.Select(produtoId => new { produtoId, quantidade = 1 }).ToArray() };
         var decrescente = new { clienteId = ana, itens = crescente.itens.Reverse().ToArray() };
-        var respostas = await Task.WhenAll(Enumerable.Range(0, 30).Select(i => CriarAsync(i % 2 == 0 ? crescente : decrescente)));
+        // 30 clientes distintos atrás do proxy: um IP só passaria do limite de 20 POST por minuto (CA17).
+        var respostas = await Task.WhenAll(Enumerable.Range(0, 30).Select(i => CriarAsync(i % 2 == 0 ? crescente : decrescente, $"198.51.100.{i + 1}")));
 
         Assert.All(respostas, resposta => Assert.Equal(HttpStatusCode.Created, resposta.StatusCode));
         Assert.All((await EstoquesAsync()).Values, estoque => Assert.Equal(970, estoque));
@@ -220,8 +221,8 @@ public sealed class CriarPedidoTests(BancoDeTestes banco) : IAsyncLifetime
         return problema.Errors;
     }
 
-    private async Task<HttpResponseMessage> CriarAsync(object corpo) =>
-        await _cliente.PostAsJsonAsync(new Uri("/pedidos", UriKind.Relative), corpo, TestContext.Current.CancellationToken);
+    private async Task<HttpResponseMessage> CriarAsync(object corpo, string? ipDoCliente = null) =>
+        await _cliente.PostComoClienteAsync("/pedidos", corpo, ipDoCliente);
 
     private async Task<Dictionary<int, int>> EstoquesAsync()
     {

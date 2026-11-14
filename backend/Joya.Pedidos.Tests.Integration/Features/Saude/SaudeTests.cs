@@ -21,8 +21,7 @@ public sealed class SaudeTests(BancoDeTestes banco)
     [Fact]
     public async Task Health_sem_banco_responde_indisponivel_sem_detalhes_internos()
     {
-        const string bancoInalcancavel = "Server=127.0.0.1,1;Database=JoyaPedidos;User Id=sa;Password=x;Connect Timeout=1;TrustServerCertificate=True";
-        await using var api = new ApiDeTestes(bancoInalcancavel);
+        await using var api = new ApiDeTestes(ApiDeTestes.BancoInalcancavel);
         using var cliente = api.CreateClient();
 
         var resposta = await cliente.GetAsync(new Uri("/health", UriKind.Relative), TestContext.Current.CancellationToken);
