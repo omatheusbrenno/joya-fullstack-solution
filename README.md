@@ -4,6 +4,19 @@ Teste técnico Full Stack (.NET + TypeScript, AI First): cadastro e consulta de 
 
 > Em construção. Este README vai documentar como rodar com Docker, como rodar os testes, as decisões técnicas, o uso do Claude e o debug da query.
 
+## Versão online
+
+**https://joya-pedidos.vercel.app**: nada para instalar (ADR 0007).
+
+> **A primeira requisição leva cerca de 50 s.** A API roda no plano gratuito do Render, que hiberna depois de 15 min sem uso, e o banco do Azure SQL Database Free também pausa quando fica ocioso. Se a tela demorar ou mostrar erro na primeira carga, espere um minuto e recarregue. Depois disso ela responde normalmente.
+
+- **Banco**: Azure SQL Database (Free Offer), com o schema e a carga aplicados pelos mesmos scripts de `database/`. No Azure, a API entra com um usuário contido de privilégio mínimo, e o login do MCP não é criado.
+- **API**: o mesmo `backend/Dockerfile`, no Render (`render.yaml`). A connection string só existe no painel do Render.
+- **Frontend**: o build estático na Vercel (`frontend/vercel.json`). O rewrite repassa `/api` para o Render, então o navegador só fala com uma origem e o CORS continua fechado (ADR 0011). A CSP e os headers de segurança são os mesmos do `nginx.conf`.
+- **Rate limit**: atrás da Vercel, a API vê o IP de saída da Vercel, e visitantes que saem pelo mesmo IP dividem o limite (ADR 0015).
+
+Para refazer o deploy, rode `scripts/wizard-deploy.sh`. Ele guia os passos nos painéis do Azure, do Render e da Vercel e confere o `/health`, o rewrite, os headers e os E2E no ambiente online.
+
 ## Configuração AI First (já disponível)
 
 - `CLAUDE.md` na raiz, mais `backend/CLAUDE.md` e `frontend/CLAUDE.md`, com o contexto de cada app.
