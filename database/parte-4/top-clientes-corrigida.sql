@@ -5,11 +5,13 @@
 --
 -- O que mudou em relação à original:
 -- 1. INNER JOIN, explícito: o filtro de 2026 já descartava os Clientes sem Pedido, então o LEFT JOIN era falso.
--- 2. Período semiaberto [2026-01-01, 2027-01-01) sem função sobre DataPedido: vira seek em IX_Pedidos_DataPedido.
+-- 2. Período semiaberto [2026-01-01, 2027-01-01) sem função sobre DataPedido: a coluna fica SARGable e a estimativa
+--    sai do histograma. Para 2026 inteiro (44% dos Pedidos) o otimizador ainda prefere o scan, e está certo; num
+--    Período seletivo vira seek em IX_Pedidos_DataPedido (README, "O seek num Período seletivo").
 -- 3. Agrupa por ClienteId, não por Nome: os homônimos "Ana Souza" (1 e 4) são Clientes diferentes (RN13).
 -- 4. ORDER BY decrescente, com desempate pelo id para a ordem ser estável.
 -- 5. TOP (5).
--- Os índices que ela usa estão em 01-criar-schema.sql (IX_Pedidos_DataPedido e IX_ItensPedido_PedidoId).
+-- Os índices estão em 01-criar-schema.sql: IX_ItensPedido_PedidoId sempre; IX_Pedidos_DataPedido nos Períodos seletivos.
 USE JoyaPedidos;
 GO
 
