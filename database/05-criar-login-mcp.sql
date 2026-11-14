@@ -1,8 +1,9 @@
 -- Login do MCP do SQL Server (ADR 0010): o Claude lê dados e planos de execução, e não escreve nada.
 -- A garantia está na permissão do login, não na flag "read-only" do servidor MCP (OWASP A01).
 -- Só db_datareader + SHOWPLAN: nada de db_datawriter, DDL ou EXECUTE.
--- A senha chega pela variável do sqlcmd SENHA_MCP (vem do .env, nunca versionada).
+-- A senha chega pela variável do sqlcmd SENHA_MCP: do .env ou, sem ele, do padrão de desenvolvimento do compose (ADR 0012).
 -- Idempotente: se o login já existe, só realinha a senha.
+-- Depende de 00-criar-banco.sql (DEFAULT_DATABASE e USE JoyaPedidos).
 USE master;
 GO
 
