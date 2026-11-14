@@ -234,7 +234,8 @@ stage "Azure: aplicar os scripts de database/"
 say "Os mesmos scripts do compose, pelo mesmo aplicar-scripts.sh, num container com o sqlcmd."
 if [[ -z "$(_existing SENHA_API || true)" ]]; then
   # Maiúscula, minúscula, dígito e símbolo para a política de senha; sem ' ; $ para não quebrar SQL nem connection string.
-  write_env SENHA_API "Api_$(openssl rand -hex 16)_Z9"
+  # Sem "joya" nem "api": o Azure recusa senha com um pedaço de 3+ letras do nome do login (joya_api).
+  write_env SENHA_API "Pedidos_$(openssl rand -hex 16)_Z9"
 else
   SENHA_API=$(_existing SENHA_API)
   note "Usando a SENHA_API já salva em $ENV_FILE."
