@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(FabricaDeConexao.DaConfiguracao(builder.Configuration));
 builder.Services.AddProblemDetailsDaApi();
 builder.Services.AddValidation();
+builder.Services.AddProxiesConfiaveis(builder.Configuration);
 builder.Services.AddLimiteDeRequisicoes();
 builder.Services.AddSaude();
 builder.Services.AddListarClientes();
@@ -20,6 +21,9 @@ builder.Services.AddListarProdutos();
 builder.Services.AddConsultarTopClientes();
 
 var app = builder.Build();
+
+// Primeiro o IP real do cliente: tudo que vem depois (rate limit, logs) já o enxerga.
+app.UseForwardedHeaders();
 
 // Respostas de erro sem corpo (ex.: query string que não converte para o tipo) saem em ProblemDetails (ADR 0008).
 app.UseStatusCodePages();

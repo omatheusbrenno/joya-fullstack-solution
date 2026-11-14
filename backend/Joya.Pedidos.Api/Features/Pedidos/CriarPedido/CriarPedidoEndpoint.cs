@@ -1,3 +1,4 @@
+using Joya.Pedidos.Api.Infraestrutura;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Joya.Pedidos.Api.Features.Pedidos.CriarPedido;
@@ -7,11 +8,12 @@ public static class CriarPedidoEndpoint
     public static IServiceCollection AddCriarPedido(this IServiceCollection services) =>
         services.AddScoped<CriarPedidoHandler>();
 
-    /// <summary>POST /pedidos: cria o Pedido com Baixa de Estoque atômica. 201, 400 (forma) ou 422 (negócio).</summary>
+    /// <summary>POST /pedidos: cria o Pedido com Baixa de Estoque atômica. 201, 400 (forma), 422 (negócio) ou 429 (20/min por IP).</summary>
     public static IEndpointRouteBuilder MapCriarPedido(this IEndpointRouteBuilder app)
     {
         app.MapPost("/pedidos", async (CriarPedidoRequest request, CriarPedidoHandler handler, CancellationToken cancellationToken) =>
-            ParaHttp(await handler.ExecutarAsync(request, cancellationToken)));
+            ParaHttp(await handler.ExecutarAsync(request, cancellationToken)))
+            .RequireRateLimiting(LimiteDeRequisicoes.CriacaoDePedido);
         return app;
     }
 

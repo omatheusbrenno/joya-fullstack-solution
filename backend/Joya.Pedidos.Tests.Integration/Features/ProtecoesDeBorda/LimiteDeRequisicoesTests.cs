@@ -39,7 +39,27 @@ public sealed class LimiteDeRequisicoesTests(BancoDeTestes banco) : IAsyncLifeti
         await AssertProblemaAsync(resposta, HttpStatusCode.TooManyRequests);
     }
 
+    [Fact]
+    public async Task Acima_de_20_POST_pedidos_por_minuto_do_mesmo_IP_devolve_429_e_as_outras_rotas_seguem_liberadas()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            using var permitida = await CriarPedidoAsync();
+            Assert.Equal(HttpStatusCode.BadRequest, permitida.StatusCode);
+        }
+
+        using var resposta = await CriarPedidoAsync();
+
+        await AssertProblemaAsync(resposta, HttpStatusCode.TooManyRequests);
+        using var leitura = await GetAsync(Produtos);
+        Assert.Equal(HttpStatusCode.OK, leitura.StatusCode);
+    }
+
     private async Task<HttpResponseMessage> GetAsync(Uri uri) => await _cliente.GetAsync(uri, TestContext.Current.CancellationToken);
+
+    // Corpo sem Cliente nem Itens: 400 rápido, sem tocar o banco. O limite conta a requisição mesmo assim.
+    private async Task<HttpResponseMessage> CriarPedidoAsync() =>
+        await _cliente.PostAsJsonAsync(new Uri("/pedidos", UriKind.Relative), new { }, TestContext.Current.CancellationToken);
 
     internal static async Task AssertProblemaAsync(HttpResponseMessage resposta, HttpStatusCode statusEsperado)
     {
