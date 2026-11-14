@@ -5,7 +5,7 @@ namespace Joya.Pedidos.Api.Features.Relatorios.TopClientes;
 
 /// <summary>
 /// Query string de GET /relatorios/top-clientes, validada na borda pelo AddValidation (400 em ProblemDetails, ADR 0008).
-/// O Período é obrigatório e inclusivo nas duas pontas, em UTC (RN13).
+/// O Período é inclusivo nas duas pontas, em UTC (RN12), e obrigatório (RN13).
 /// </summary>
 public sealed record TopClientesRequest(
     [property: Required(ErrorMessage = "Informe a data inicial do Período.")] DataIso? DataInicio,
