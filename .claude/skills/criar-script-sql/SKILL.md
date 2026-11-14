@@ -7,6 +7,8 @@ description: Padrão dos scripts SQL de database/ (idempotentes, aplicados em or
 
 Os scripts de `database/` são a fonte única do schema (ADR 0003): não há migrations. O `db-init` do compose (`database/init/aplicar-scripts.sh`) aplica, em ordem, todo `database/[0-9][0-9]-*.sql` com o usuário `sa`, **em todo `docker compose up`**. Por isso todo script é _idempotente_: rodar duas vezes dá o mesmo banco que rodar uma vez.
 
+Os mesmos arquivos rodam também no **Azure SQL Database** do deploy (ADR 0016), conectados direto em `JoyaPedidos` com o admin do servidor. Lá o `USE` só aceita o banco atual e não há login no `master`: veja [Logins e segredos](#logins-e-segredos).
+
 Leia o script vivo mais parecido antes de escrever:
 
 - **Banco**: `00-criar-banco.sql`.
@@ -38,8 +40,8 @@ Leia o script vivo mais parecido antes de escrever:
 | Banco | `IF DB_ID(N'JoyaPedidos') IS NULL CREATE DATABASE ...` |
 | Tabela | `IF OBJECT_ID(N'dbo.Tabela', N'U') IS NULL BEGIN CREATE TABLE ... END` |
 | Índice | `IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_...' AND object_id = OBJECT_ID(N'dbo.Tabela'))` |
-| Login | `IF SUSER_ID(N'login') IS NULL CREATE LOGIN ... ELSE ALTER LOGIN ... WITH PASSWORD`: a senha se realinha com o `.env` |
-| Usuário | `IF USER_ID(N'login') IS NULL CREATE USER ... FOR LOGIN ...` |
+| Login | `IF SUSER_ID(N'login') IS NULL EXEC (N'CREATE LOGIN ...') ELSE EXEC (N'ALTER LOGIN ... WITH PASSWORD ...')`, só fora do Azure: a senha se realinha com o `.env` |
+| Usuário | SQL Server: `IF USER_ID(N'login') IS NULL EXEC (N'CREATE USER ... FOR LOGIN ...')`. Azure: usuário contido, `CREATE USER ... WITH PASSWORD` ou `ALTER USER ... WITH PASSWORD` |
 | Papel e permissão | `ALTER ROLE ... ADD MEMBER` e `GRANT` já são idempotentes |
 | Linha de carga | `INSERT ... SELECT ... FROM (VALUES ...) AS v WHERE NOT EXISTS (SELECT 1 FROM dbo.X WHERE Id = v.Id)` |
 
@@ -63,7 +65,8 @@ A guarda olha só se o objeto existe. Mudar a definição de uma tabela que já 
 ## Logins e segredos
 
 - Um login por consumidor, com o mínimo de papel (OWASP A01): a API tem `db_datareader` + `db_datawriter`; o MCP tem `db_datareader` + `SHOWPLAN`. Nenhum tem DDL.
-- `CREATE LOGIN ... WITH PASSWORD = N'$(SENHA_X)', CHECK_POLICY = ON`. A senha nunca entra no script (A02). Ela percorre este caminho:
+- **Dois motores** (ADR 0016), separados por `CAST(SERVERPROPERTY('EngineEdition') AS INT) = 5` (Azure SQL Database). No SQL Server, login + usuário; no Azure, usuário contido. Sem `USE master`: `CREATE LOGIN` vale em qualquer banco do SQL Server. O DDL de cada motor fica em `EXEC (N'...')`, com as aspas da senha dobradas, porque o Azure recusa `CREATE LOGIN` até num ramo que não executa. Copie `02-criar-login-api.sql`. Um login só do ambiente local (como o do MCP, em `05`) não cria nada no Azure.
+- `CREATE LOGIN ... WITH PASSWORD = N'$(SENHA_X)', CHECK_POLICY = ON`. A senha nunca entra no script (A02), nem contém `'`. Ela percorre este caminho:
   1. `x-senhas` do `docker-compose.yml`, com padrão de desenvolvimento (ADR 0012);
   2. `-v SENHA_X="$SENHA_X"` em `aplicar-scripts.sh`;
   3. uma linha em `.env.example`;
