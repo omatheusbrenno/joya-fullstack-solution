@@ -14,3 +14,9 @@ export function formatarMoeda(valor: number): string {
 export function formatarDataHoraUtc(iso: string): string {
   return dataHora.format(new Date(iso));
 }
+
+const numero = new Intl.NumberFormat("pt-BR");
+
+export function formatarNumero(valor: number): string {
+  return numero.format(valor);
+}

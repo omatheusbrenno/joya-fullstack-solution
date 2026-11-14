@@ -2,10 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { enviarJsonParaApi } from "../../../compartilhado/buscarDaApi";
 import { CHAVE_DOS_PRODUTOS } from "../../produtos/api/produtos";
+import { CHAVE_DO_TOP_CLIENTES } from "../../relatorios/api/topClientes";
 import { CHAVE_DOS_PEDIDOS } from "./pedidos";
-
-/** Prefixo das consultas do Top Clientes. A aba do ticket #5 deve usar esta chave para ser atualizada aqui. */
-export const CHAVE_DO_TOP_CLIENTES = ["top-clientes"] as const;
 
 /** Corpo de POST /pedidos. Não há campo de preço: o Preço Unitário vem do Produto (RN07). */
 export type NovoPedido = {
