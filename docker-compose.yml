@@ -41,6 +41,9 @@ services:
     build: ./backend
     environment:
       ConnectionStrings__Pedidos: "Server=db,1433;Database=JoyaPedidos;User Id=joya_api;Password=${SENHA_API:-Pedidos_Local_2026!};Encrypt=True;TrustServerCertificate=True"
+      # Só quem está na rede do compose (o nginx do web) pode informar o IP do cliente em X-Forwarded-For (ADR 0011).
+      # A API não publica porta no host, então ninguém de fora fala com ela direto.
+      ProxiesConfiaveis__0: 172.30.86.0/24
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -58,6 +61,13 @@ services:
       timeout: 3s
       retries: 30
       start_period: 5s
+
+# Sub-rede fixa para a API saber em quem confiar como proxy (ProxiesConfiaveis acima).
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.86.0/24
 
 volumes:
   dados-sql:
