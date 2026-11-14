@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { formatarMoeda } from "../../compartilhado/formatacao";
+import { periodoInvertido } from "../../compartilhado/periodo";
 import styles from "./AbaPedidos.module.css";
-import { type FiltrosDePedidos, periodoInvertido, useListaDePedidos } from "./api/pedidos";
+import { type FiltrosDePedidos, useListaDePedidos } from "./api/pedidos";
 import { FiltrosDaListagem } from "./FiltrosDaListagem";
 import { ModalNovoPedido } from "./novoPedido/ModalNovoPedido";
 import { Paginacao } from "./Paginacao";

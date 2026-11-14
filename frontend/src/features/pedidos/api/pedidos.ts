@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { buscarJsonDaApi } from "../../../compartilhado/buscarDaApi";
+import { type PeriodoParcial, periodoInvertido } from "../../../compartilhado/periodo";
 
 export const pedidoListadoSchema = z.object({
   id: z.number().int().positive(),
@@ -21,20 +22,14 @@ export const paginaDePedidosSchema = z.object({
 export type PaginaDePedidos = z.infer<typeof paginaDePedidosSchema>;
 
 /** Filtros de GET /pedidos. As datas vêm do <input type="date">, já em yyyy-MM-dd. */
-export type FiltrosDePedidos = {
+export type FiltrosDePedidos = PeriodoParcial & {
   clienteId?: number | undefined;
-  dataInicio?: string | undefined;
-  dataFim?: string | undefined;
 };
 
 export const TAMANHO_DA_PAGINA = 20;
 
 /** Prefixo das consultas da listagem, invalidado depois de criar um Pedido. */
 export const CHAVE_DOS_PEDIDOS = ["pedidos"] as const;
-
-export function periodoInvertido({ dataInicio, dataFim }: FiltrosDePedidos): boolean {
-  return Boolean(dataInicio && dataFim && dataInicio > dataFim);
-}
 
 export function useListaDePedidos(filtros: FiltrosDePedidos, pagina: number) {
   return useQuery({

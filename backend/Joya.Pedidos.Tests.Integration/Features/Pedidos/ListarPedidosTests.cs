@@ -87,6 +87,7 @@ public sealed class ListarPedidosTests(BancoDeTestes banco) : IAsyncLifetime
         Assert.Equal([depoisDoPeriodo, fimDoPeriodo, inicioDoPeriodo, antesDoPeriodo], await IdsAsync($"/pedidos?clienteId={ana}"));
         Assert.Equal([fimDoPeriodo, daOutraAna, inicioDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-01&dataFim=2026-03-31"));
         Assert.Equal([depoisDoPeriodo, fimDoPeriodo, daOutraAna, inicioDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-01"));
+        Assert.Equal([depoisDoPeriodo, fimDoPeriodo, daOutraAna, inicioDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-01&dataFim=9999-12-31"));
         Assert.Equal([fimDoPeriodo, daOutraAna, inicioDoPeriodo, antesDoPeriodo], await IdsAsync("/pedidos?dataFim=2026-03-31"));
         Assert.Equal([fimDoPeriodo, inicioDoPeriodo], await IdsAsync($"/pedidos?clienteId={ana}&dataInicio=2026-03-01&dataFim=2026-03-31"));
         Assert.Equal([fimDoPeriodo], await IdsAsync("/pedidos?dataInicio=2026-03-31&dataFim=2026-03-31&clienteId=" + ana));
