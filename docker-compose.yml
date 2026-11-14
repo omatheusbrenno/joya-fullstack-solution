@@ -4,6 +4,8 @@
 x-senhas: &senhas
   MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Dev_Joya_Sa_2026!}
   SENHA_API: ${SENHA_API:-Pedidos_Local_2026!}
+  # Login somente leitura do MCP do SQL Server (ADR 0010); o .mcp.json usa o mesmo padrão.
+  SENHA_MCP: ${SENHA_MCP:-Leitura_Local_2026!}
 
 services:
   db:
