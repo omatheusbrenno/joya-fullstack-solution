@@ -29,7 +29,9 @@ Princípios que já valem:
 - Contratos explícitos na borda (request/response tipados e validados) e OpenAPI gerado.
 - Nomes semânticos, tirados do `GLOSSARY.md`.
 
-Quando a arquitetura estiver decidida, cada artefato recorrente (endpoint, query, command, migration/script) ganha uma skill própria em `.claude/skills/`, para que as convenções não se acumulem neste arquivo.
+As convenções de cada artefato recorrente moram nas skills `criar-slice-backend` (endpoint, consulta, comando e seus testes) e `criar-script-sql` (scripts de `database/`, que rodam no SQL Server e no Azure).
+
+**Proxy confiável**: `ProxiesConfiaveis__N` lista as redes de onde a API aceita `X-Forwarded-For`. Um ambiente novo atrás de proxy precisa dessa lista, senão todos os clientes dividem um balde só de rate limit (ADR 0015). Os valores atuais ficam no `docker-compose.yml` e no `render.yaml`.
 
 ## Comandos
 

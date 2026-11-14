@@ -39,4 +39,4 @@ Subida completa (da raiz): `docker compose up --build`, em http://localhost:8080
 - **E2E (Playwright)**: com o compose no ar (`docker compose up --build -d --wait` na raiz), `npx playwright test`. Na primeira vez, `npx playwright install chromium`. Outra URL: `BASE_URL=...`. Os cenários ficam em `e2e/` e usam os ids fixos da carga de exemplo.
 - **Testes Vitest** de funções puras são opcionais; ainda não há.
 
-A imagem Docker serve o build pelo nginx (`nginx.conf`), que repassa `/api/` para o serviço `api`.
+A imagem Docker serve o build pelo nginx (`nginx.conf`), que repassa `/api/` para o serviço `api`. Na Vercel, o `vercel.json` faz o mesmo papel: o rewrite de `/api` e a mesma CSP e headers. **Mudou a CSP ou um header num dos dois, mude no outro igual.** O `e2e/csp.spec.ts` falha se o SPA violar a CSP do nginx.
